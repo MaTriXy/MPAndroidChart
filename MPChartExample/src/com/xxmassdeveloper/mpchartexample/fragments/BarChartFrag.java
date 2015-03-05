@@ -8,9 +8,11 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.utils.Legend;
-import com.xxmassdeveloper.mpchartexample.MyMarkerView;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.xxmassdeveloper.mpchartexample.R;
+import com.xxmassdeveloper.mpchartexample.custom.MyMarkerView;
 
 
 public class BarChartFrag extends SimpleFragment {
@@ -27,34 +29,31 @@ public class BarChartFrag extends SimpleFragment {
         
         // create a new chart object
         mChart = new BarChart(getActivity());
-        mChart.setYLabelCount(6);
         mChart.setDescription("");
         
         MyMarkerView mv = new MyMarkerView(getActivity(), R.layout.custom_marker_view);
-        mv.setOffsets(-mv.getMeasuredWidth() / 2, -mv.getMeasuredHeight());
 
         mChart.setMarkerView(mv);
         
         mChart.setHighlightIndicatorEnabled(false);
-        mChart.setDrawBorder(false);
-//        mChart.setBorderStyles(new BorderStyle[] { BorderStyle.LEFT });
+
         mChart.setDrawGridBackground(false);
-        mChart.setDrawVerticalGrid(false);
-        mChart.setDrawXLabels(false);
-        mChart.setDrawYValues(false);
-        mChart.setUnit(" €");
+        mChart.setDrawBarShadow(false);
         
         Typeface tf = Typeface.createFromAsset(getActivity().getAssets(),"OpenSans-Light.ttf");
         
-        mChart.setYLabelTypeface(tf);
-        
-        mChart.setData(generateData(1, 20000, 12));
+        mChart.setData(generateBarData(1, 20000, 12));
         
         Legend l = mChart.getLegend();
         l.setTypeface(tf);
         
-//        YLabels labels = mChart.getYLabels();
-//        labels.setPosition(YLabelPosition.BOTH_SIDED);
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.setTypeface(tf);
+
+        mChart.getAxisRight().setEnabled(false);
+        
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setEnabled(false);
         
         // programatically add the chart
         FrameLayout parent = (FrameLayout) v.findViewById(R.id.parentLayout);

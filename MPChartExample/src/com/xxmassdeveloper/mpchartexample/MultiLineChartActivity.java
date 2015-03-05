@@ -11,15 +11,18 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.ChartData;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.Legend.LegendPosition;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.filter.Approximator;
 import com.github.mikephil.charting.data.filter.Approximator.ApproximatorType;
-import com.github.mikephil.charting.interfaces.OnChartValueSelectedListener;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.utils.Highlight;
-import com.github.mikephil.charting.utils.XLabels;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -47,22 +50,12 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
         mSeekBarY = (SeekBar) findViewById(R.id.seekBar2);
         mSeekBarY.setOnSeekBarChangeListener(this);
 
-        // create a color template for one dataset with only one color
-        ColorTemplate ct = new ColorTemplate();
-        ct.addColorsForDataSets(ColorTemplate.VORDIPLOM_COLORS, this);
-
         mChart = (LineChart) findViewById(R.id.chart1);
         mChart.setOnChartValueSelectedListener(this);
-        mChart.setColorTemplate(ct);
+        
+        mChart.setDrawGridBackground(false);
 
         // mChart.setStartAtZero(true);
-
-        // disable the drawing of values into the chart
-        mChart.setDrawYValues(false);
-
-        mChart.setLineWidth(5f);
-        mChart.setCircleSize(5f);
-        mChart.setYLabelCount(6);
 
         // enable value highlighting
         mChart.setHighlightEnabled(true);
@@ -72,15 +65,16 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
 
         // enable scaling and dragging
         mChart.setDragEnabled(true);
+        mChart.setScaleEnabled(true);
 
         // if disabled, scaling can be done on x- and y-axis separately
         mChart.setPinchZoom(false);
 
-        mSeekBarX.setProgress(45);
+        mSeekBarX.setProgress(20);
         mSeekBarY.setProgress(100);
-        
-//        Legend l = mChart.getLegend();
-//        l.setPosition(LegendPosition.RIGHT_OF_CHART);
+
+        Legend l = mChart.getLegend();
+        l.setPosition(LegendPosition.RIGHT_OF_CHART);
     }
 
     @Override
@@ -94,10 +88,9 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
 
         switch (item.getItemId()) {
             case R.id.actionToggleValues: {
-                if (mChart.isDrawYValuesEnabled())
-                    mChart.setDrawYValues(false);
-                else
-                    mChart.setDrawYValues(true);
+                for (DataSet<?> set : mChart.getData().getDataSets())
+                    set.setDrawValues(!set.isDrawValuesEnabled());
+
                 mChart.invalidate();
                 break;
             }
@@ -110,15 +103,6 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
                 mChart.invalidate();
                 break;
             }
-            case R.id.actionDashedLine: {
-                if (!mChart.isDashedLineEnabled()) {
-                    mChart.enableDashedLine(10f, 5f, 0f);
-                } else {
-                    mChart.disableDashedLine();
-                }
-                mChart.invalidate();
-                break;
-            }
             case R.id.actionToggleHighlight: {
                 if (mChart.isHighlightEnabled())
                     mChart.setHighlightEnabled(false);
@@ -128,18 +112,28 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
                 break;
             }
             case R.id.actionToggleFilled: {
-                if (mChart.isDrawFilledEnabled())
-                    mChart.setDrawFilled(false);
-                else
-                    mChart.setDrawFilled(true);
+                ArrayList<LineDataSet> sets = (ArrayList<LineDataSet>) mChart.getData()
+                        .getDataSets();
+
+                for (LineDataSet set : sets) {
+                    if (set.isDrawFilledEnabled())
+                        set.setDrawFilled(false);
+                    else
+                        set.setDrawFilled(true);
+                }
                 mChart.invalidate();
                 break;
             }
             case R.id.actionToggleCircles: {
-                if (mChart.isDrawCirclesEnabled())
-                    mChart.setDrawCircles(false);
-                else
-                    mChart.setDrawCircles(true);
+                ArrayList<LineDataSet> sets = (ArrayList<LineDataSet>) mChart.getData()
+                        .getDataSets();
+
+                for (LineDataSet set : sets) {
+                    if (set.isDrawCirclesEnabled())
+                        set.setDrawCircles(false);
+                    else
+                        set.setDrawCircles(true);
+                }
                 mChart.invalidate();
                 break;
             }
@@ -157,17 +151,14 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
                 break;
             }
             case R.id.actionToggleStartzero: {
-                if (mChart.isStartAtZeroEnabled())
-                    mChart.setStartAtZero(false);
-                else
-                    mChart.setStartAtZero(true);
-
+                mChart.getAxisLeft().setStartAtZero(!mChart.getAxisLeft().isStartAtZeroEnabled());
+                mChart.getAxisRight().setStartAtZero(!mChart.getAxisRight().isStartAtZeroEnabled());
                 mChart.invalidate();
                 break;
             }
             case R.id.actionToggleAdjustXLegend: {
-                XLabels xLabels = mChart.getXLabels();
-                
+                XAxis xLabels = mChart.getXAxis();
+
                 if (xLabels.isAdjustXLabelsEnabled())
                     xLabels.setAdjustXLabels(false);
                 else
@@ -181,52 +172,76 @@ public class MultiLineChartActivity extends DemoBase implements OnSeekBarChangeL
                 mChart.saveToPath("title" + System.currentTimeMillis(), "");
                 break;
             }
+            case R.id.animateX: {
+                mChart.animateX(3000);
+                break;
+            }
+            case R.id.animateY: {
+                mChart.animateY(3000);
+                break;
+            }
+            case R.id.animateXY: {
+
+                mChart.animateXY(3000, 3000);
+                break;
+            }
         }
         return true;
     }
 
+    private int[] mColors = new int[] {
+            ColorTemplate.VORDIPLOM_COLORS[0], 
+            ColorTemplate.VORDIPLOM_COLORS[1],
+            ColorTemplate.VORDIPLOM_COLORS[2]
+    };
+
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-        tvX.setText("" + (mSeekBarX.getProgress() + 1));
+        tvX.setText("" + (mSeekBarX.getProgress()));
         tvY.setText("" + (mSeekBarY.getProgress()));
 
         ArrayList<String> xVals = new ArrayList<String>();
         for (int i = 0; i < mSeekBarX.getProgress(); i++) {
             xVals.add((i) + "");
         }
-
-        ArrayList<Double[]> values = new ArrayList<Double[]>();
+ 
+        ArrayList<LineDataSet> dataSets = new ArrayList<LineDataSet>();
 
         for (int z = 0; z < 3; z++) {
 
-            Double[] vals = new Double[mSeekBarX.getProgress()];
+            ArrayList<Entry> values = new ArrayList<Entry>();
 
             for (int i = 0; i < mSeekBarX.getProgress(); i++) {
                 double val = (Math.random() * mSeekBarY.getProgress()) + 3;
-                vals[i] = val;
+                values.add(new Entry((float) val, i));
             }
 
-            values.add(vals);
+            LineDataSet d = new LineDataSet(values, "DataSet " + (z + 1));
+            d.setLineWidth(2.5f);
+            d.setCircleSize(4f);
+
+            int color = mColors[z % mColors.length];
+            d.setColor(color);
+            d.setCircleColor(color);
+            dataSets.add(d);
         }
 
-        ArrayList<DataSet> dataSets = new ArrayList<DataSet>();
+        // make the first DataSet dashed
+        dataSets.get(0).enableDashedLine(10, 10, 0);
+        dataSets.get(0).setColors(ColorTemplate.VORDIPLOM_COLORS);
+        dataSets.get(0).setCircleColors(ColorTemplate.VORDIPLOM_COLORS);
 
-        // create DataSets from values
-        // NOTE: DataSet.makeDataSets(...) is just a convenience method. Of
-        // course, three different DataSets could be created separately as well.
-        dataSets.addAll(DataSet.makeDataSets(values));
-
-        ChartData data = new ChartData(xVals, dataSets);
+        LineData data = new LineData(xVals, dataSets);
         mChart.setData(data);
         mChart.invalidate();
     }
 
     @Override
-    public void onValuesSelected(Entry[] values, Highlight[] highlights) {
-        Log.i("VALS SELECTED",
-                "Value: " + values[0].getVal() + ", xIndex: " + highlights[0].getXIndex()
-                        + ", DataSet index: " + highlights[0].getDataSetIndex());
+    public void onValueSelected(Entry e, int dataSetIndex, Highlight h) {
+        Log.i("VAL SELECTED",
+                "Value: " + e.getVal() + ", xIndex: " + e.getXIndex()
+                        + ", DataSet index: " + dataSetIndex);
     }
 
     @Override

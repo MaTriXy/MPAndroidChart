@@ -2,6 +2,7 @@
 package com.xxmassdeveloper.mpchartexample;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,9 +10,15 @@ import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.github.mikephil.charting.data.ChartData;
-import com.github.mikephil.charting.data.DataSet;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.xxmassdeveloper.mpchartexample.listviewitems.BarChartItem;
 import com.xxmassdeveloper.mpchartexample.listviewitems.ChartItem;
 import com.xxmassdeveloper.mpchartexample.listviewitems.LineChartItem;
@@ -44,11 +51,11 @@ public class ListViewMultiChartActivity extends DemoBase {
         for (int i = 0; i < 30; i++) {
             
             if(i % 3 == 0) {
-                list.add(new LineChartItem(generateData(i + 1), getApplicationContext()));
+                list.add(new LineChartItem(generateDataLine(i + 1), getApplicationContext()));
             } else if(i % 3 == 1) {
-                list.add(new BarChartItem(generateData(i + 1), getApplicationContext()));
+                list.add(new BarChartItem(generateDataBar(i + 1), getApplicationContext()));
             } else if(i % 3 == 2) {
-                list.add(new PieChartItem(generatePieChartData(i + 1), getApplicationContext()));
+                list.add(new PieChartItem(generateDataPie(i + 1), getApplicationContext()));
             }
         }
 
@@ -85,21 +92,70 @@ public class ListViewMultiChartActivity extends DemoBase {
      * 
      * @return
      */
-    private ChartData generateData(int cnt) {
+    private LineData generateDataLine(int cnt) {
 
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> e1 = new ArrayList<Entry>();
 
         for (int i = 0; i < 12; i++) {
-            entries.add(new Entry((int) (Math.random() * 70) + 30, i));
+            e1.add(new Entry((int) (Math.random() * 65) + 40, i));
         }
 
-        DataSet d = new DataSet(entries, "New DataSet " + cnt);
+        LineDataSet d1 = new LineDataSet(e1, "New DataSet " + cnt + ", (1)");
+        d1.setLineWidth(2.5f);
+        d1.setCircleSize(4.5f);
+        d1.setHighLightColor(Color.rgb(244, 117, 117));
+        d1.setDrawValues(false);
+        
+        ArrayList<Entry> e2 = new ArrayList<Entry>();
 
-        ChartData cd = new ChartData(getMonths(), d);
+        for (int i = 0; i < 12; i++) {
+            e2.add(new Entry(e1.get(i).getVal() - 30, i));
+        }
+
+        LineDataSet d2 = new LineDataSet(e2, "New DataSet " + cnt + ", (2)");
+        d2.setLineWidth(2.5f);
+        d2.setCircleSize(4.5f);
+        d2.setHighLightColor(Color.rgb(244, 117, 117));
+        d2.setColor(ColorTemplate.VORDIPLOM_COLORS[0]);
+        d2.setCircleColor(ColorTemplate.VORDIPLOM_COLORS[0]);
+        d2.setDrawValues(false);
+        
+        ArrayList<LineDataSet> sets = new ArrayList<LineDataSet>();
+        sets.add(d1);
+        sets.add(d2);
+        
+        LineData cd = new LineData(getMonths(), sets);
         return cd;
     }
     
-    private ChartData generatePieChartData(int cnt) {
+    /**
+     * generates a random ChartData object with just one DataSet
+     * 
+     * @return
+     */
+    private BarData generateDataBar(int cnt) {
+
+        ArrayList<BarEntry> entries = new ArrayList<BarEntry>();
+
+        for (int i = 0; i < 12; i++) {
+            entries.add(new BarEntry((int) (Math.random() * 70) + 30, i));
+        }
+
+        BarDataSet d = new BarDataSet(entries, "New DataSet " + cnt);
+        d.setBarSpacePercent(20f);
+        d.setColors(ColorTemplate.VORDIPLOM_COLORS);
+        d.setHighLightAlpha(255);
+        
+        BarData cd = new BarData(getMonths(), d);
+        return cd;
+    }
+    
+    /**
+     * generates a random ChartData object with just one DataSet
+     * 
+     * @return
+     */
+    private PieData generateDataPie(int cnt) {
 
         ArrayList<Entry> entries = new ArrayList<Entry>();
 
@@ -107,9 +163,13 @@ public class ListViewMultiChartActivity extends DemoBase {
             entries.add(new Entry((int) (Math.random() * 70) + 30, i));
         }
 
-        DataSet d = new DataSet(entries, "New DataSet " + cnt);
-
-        ChartData cd = new ChartData(getQuarters(), d);
+        PieDataSet d = new PieDataSet(entries, "");
+        
+        // space between slices
+        d.setSliceSpace(2f);
+        d.setColors(ColorTemplate.VORDIPLOM_COLORS);
+        
+        PieData cd = new PieData(getQuarters(), d);
         return cd;
     }
     

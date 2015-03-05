@@ -7,11 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.github.mikephil.charting.charts.ScatterChart;
-import com.github.mikephil.charting.charts.ScatterChart.ScatterShape;
-import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.Legend;
-import com.xxmassdeveloper.mpchartexample.MyMarkerView;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.xxmassdeveloper.mpchartexample.R;
+import com.xxmassdeveloper.mpchartexample.custom.MyMarkerView;
 
 
 public class ScatterChartFrag extends SimpleFragment {
@@ -27,37 +27,28 @@ public class ScatterChartFrag extends SimpleFragment {
         View v = inflater.inflate(R.layout.frag_simple_scatter, container, false);
         
         mChart = (ScatterChart) v.findViewById(R.id.scatterChart1);
-        mChart.setDrawYValues(false);
         mChart.setDescription("");
-        mChart.setYLabelCount(6);
-        
-        ColorTemplate ct = new ColorTemplate();
-        ct.addDataSetColors(ColorTemplate.VORDIPLOM_COLORS, getActivity());
-        ct.addDataSetColors(new int[] { R.color.colorful_1, R.color.colorful_2, R.color.colorful_3, R.color.colorful_4 } , getActivity());
-        
-        mChart.setColorTemplate(ct);
         
         Typeface tf = Typeface.createFromAsset(getActivity().getAssets(),"OpenSans-Light.ttf");
         
-        mChart.setYLabelTypeface(tf);
-        
         MyMarkerView mv = new MyMarkerView(getActivity(), R.layout.custom_marker_view);
-        mv.setOffsets(-mv.getMeasuredWidth() / 2, -mv.getMeasuredHeight());
 
         mChart.setMarkerView(mv);
-        
-        mChart.setScatterShapes(new ScatterShape[] {ScatterShape.CIRCLE, ScatterShape.SQUARE });
-        mChart.setScatterShapeSize(18f);
-        
+
         mChart.setHighlightIndicatorEnabled(false);
-        mChart.setDrawBorder(false);
 //        mChart.setBorderStyles(new BorderStyle[] { BorderStyle.LEFT });
         mChart.setDrawGridBackground(false);
-        mChart.setDrawVerticalGrid(false);
-        mChart.setDrawXLabels(false);
-        mChart.setUnit(" $");
+        mChart.setData(generateScatterData(3, 10000, 150));
         
-        mChart.setData(generateData(3, 10000, 150));
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setEnabled(false);
+        
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.setTypeface(tf);
+        
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setTypeface(tf);
+        rightAxis.setDrawGridLines(false);
         
         Legend l = mChart.getLegend();
         l.setTypeface(tf);

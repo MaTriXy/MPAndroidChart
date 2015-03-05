@@ -3,28 +3,35 @@ package com.github.mikephil.charting.utils;
 
 import android.content.res.Resources;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
+import android.util.Log;
+
+import com.github.mikephil.charting.components.YAxis.AxisDependency;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 /**
- * utilities class that has some helper methods
+ * Utilities class that has some helper methods. Needs to be initialized by
+ * calling Utils.init(...) before usage. Inside the Chart.init() method, this is
+ * done, if the Utils are used before that, Utils.init(...) needs to be called
+ * manually.
  * 
  * @author Philipp Jahoda
  */
 public abstract class Utils {
 
-    private static Resources mRes;
+    private static DisplayMetrics mMetrics;
 
     /**
-     * initialize method, called inside the Char.init() method.
+     * initialize method, called inside the Chart.init() method.
      * 
      * @param res
      */
     public static void init(Resources res) {
-        mRes = res;
+        mMetrics = res.getDisplayMetrics();
     }
 
     /**
@@ -51,7 +58,7 @@ public abstract class Utils {
 
     /**
      * This method converts dp unit to equivalent pixels, depending on device
-     * density.
+     * density. NEEDS UTILS TO BE INITIALIZED BEFORE USAGE.
      * 
      * @param dp A value in dp (density independent pixels) unit. Which we need
      *            to convert into pixels
@@ -59,20 +66,40 @@ public abstract class Utils {
      *         device density
      */
     public static float convertDpToPixel(float dp) {
-        DisplayMetrics metrics = mRes.getDisplayMetrics();
+
+        if (mMetrics == null) {
+
+            Log.e("MPChartLib-Utils",
+                    "Utils NOT INITIALIZED. You need to call Utils.init(...) at least once before calling Utils.convertDpToPixel(...). Otherwise conversion does not take place.");
+            return dp;
+            // throw new IllegalStateException(
+            // "Utils NOT INITIALIZED. You need to call Utils.init(...) at least once before calling Utils.convertDpToPixel(...).");
+        }
+
+        DisplayMetrics metrics = mMetrics;
         float px = dp * (metrics.densityDpi / 160f);
         return px;
     }
 
     /**
      * This method converts device specific pixels to density independent
-     * pixels.
+     * pixels. NEEDS UTILS TO BE INITIALIZED BEFORE USAGE.
      * 
      * @param px A value in px (pixels) unit. Which we need to convert into db
      * @return A float value to represent dp equivalent to px value
      */
     public static float convertPixelsToDp(float px) {
-        DisplayMetrics metrics = mRes.getDisplayMetrics();
+
+        if (mMetrics == null) {
+
+            Log.e("MPChartLib-Utils",
+                    "Utils NOT INITIALIZED. You need to call Utils.init(...) at least once before calling Utils.convertPixelsToDp(...). Otherwise conversion does not take place.");
+            return px;
+            // throw new IllegalStateException(
+            // "Utils NOT INITIALIZED. You need to call Utils.init(...) at least once before calling Utils.convertPixelsToDp(...).");
+        }
+
+        DisplayMetrics metrics = mMetrics;
         float dp = px / (metrics.densityDpi / 160f);
         return dp;
     }
@@ -88,7 +115,7 @@ public abstract class Utils {
     public static int calcTextWidth(Paint paint, String demoText) {
         return (int) paint.measureText(demoText);
     }
-    
+
     /**
      * calculates the approximate height of a text, depending on a demo text
      * avoid repeated calls (e.g. inside drawing methods)
@@ -104,40 +131,28 @@ public abstract class Utils {
         return r.height();
     }
 
-    /**
-     * returns the appropriate number of format digits for a delta value
-     * 
-     * @param delta
-     * @return
-     */
-    public static int getFormatDigits(float delta) {
-
-        if (delta < 0.1) {
-            return 6;
-        } else if (delta <= 1) {
-            return 4;
-        } else if (delta < 20) {
-            return 2;
-        } else if (delta < 100) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-
-    public static int getPieFormatDigits(float delta) {
-        if (delta < 0.01) {
-            return 4;
-        } else if (delta < 0.1) {
-            return 3;
-        } else if (delta < 1) {
-            return 2;
-        } else if (delta < 10) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
+    // /**
+    // * returns the appropriate number of format digits for a delta value
+    // *
+    // * @param delta
+    // * @return
+    // */
+    // public static int getFormatDigits(float delta) {
+    //
+    // if (delta < 0.1) {
+    // return 6;
+    // } else if (delta <= 1) {
+    // return 4;
+    // } else if (delta < 4) {
+    // return 3;
+    // } else if (delta < 20) {
+    // return 2;
+    // } else if (delta < 60) {
+    // return 1;
+    // } else {
+    // return 0;
+    // }
+    // }
 
     /**
      * returns the appropriate number of format digits for a legend value
@@ -244,14 +259,21 @@ public abstract class Utils {
         }
 
         // if number around zero (between 1 and -1)
-        if (zero)
+        if (zero) {
             out[ind--] = '0';
+            charCount += 1;
+        }
 
         // if the number is negative
-        if (neg)
+        if (neg) {
             out[ind--] = '-';
+            charCount += 1;
+        }
 
-        return new String(out);
+        int start = out.length - charCount;
+
+        // use this instead of "new String(...)" because of issue < Android 4.0
+        return String.valueOf(out, start, out.length - start);
     }
 
     /**
@@ -266,6 +288,19 @@ public abstract class Utils {
         final float magnitude = (float) Math.pow(10, pw);
         final long shifted = Math.round(number * magnitude);
         return shifted / magnitude;
+    }
+
+    /**
+     * Returns the appropriate number of decimals to be used for the provided
+     * number.
+     * 
+     * @param number
+     * @return
+     */
+    public static int getDecimals(float number) {
+
+        float i = roundToNextSignificant(number);
+        return (int) Math.ceil(-Math.log10(i)) + 2;
     }
 
     /**
@@ -300,5 +335,100 @@ public abstract class Utils {
         }
 
         return ret;
+    }
+
+    /**
+     * Replacement for the Math.nextUp(...) method that is only available in
+     * HONEYCOMB and higher. Dat's some seeeeek sheeet.
+     * 
+     * @param d
+     * @return
+     */
+    public static double nextUp(double d) {
+        if (d == Double.POSITIVE_INFINITY)
+            return d;
+        else {
+            d += 0.0d;
+            return Double.longBitsToDouble(Double.doubleToRawLongBits(d) +
+                    ((d >= 0.0d) ? +1L : -1L));
+        }
+    }
+
+    /**
+     * Returns the index of the DataSet that contains the closest value on the
+     * y-axis. This is needed for highlighting.
+     * 
+     * @param valsAtIndex all the values at a specific index
+     * @return
+     */
+    public static int getClosestDataSetIndex(ArrayList<SelInfo> valsAtIndex, float val,
+            AxisDependency axis) {
+
+        int index = -1;
+        float distance = Float.MAX_VALUE;
+
+        for (int i = 0; i < valsAtIndex.size(); i++) {
+
+            SelInfo sel = valsAtIndex.get(i);
+
+            if (axis == null || sel.dataSet.getAxisDependency() == axis) {
+
+                float cdistance = Math.abs((float) sel.val - val);
+                if (cdistance < distance) {
+                    index = valsAtIndex.get(i).dataSetIndex;
+                    distance = cdistance;
+                }
+            }
+        }
+
+        // Log.i(LOG_TAG, "Closest DataSet index: " + index);
+
+        return index;
+    }
+
+    /**
+     * Returns the minimum distance from a touch-y-value (in pixels) to the
+     * closest y-value (in pixels) that is displayed in the chart.
+     * 
+     * @param valsAtIndex
+     * @param val
+     * @param axis
+     * @return
+     */
+    public static float getMinimumDistance(ArrayList<SelInfo> valsAtIndex, float val,
+            AxisDependency axis) {
+
+        float distance = Float.MAX_VALUE;
+
+        for (int i = 0; i < valsAtIndex.size(); i++) {
+
+            SelInfo sel = valsAtIndex.get(i);
+
+            if (sel.dataSet.getAxisDependency() == axis) {
+
+                float cdistance = Math.abs((float) sel.val - val);
+                if (cdistance < distance) {
+                    distance = cdistance;
+                }
+            }
+        }
+
+        return distance;
+    }
+
+    /**
+     * Calculates the position around a center point, depending on the distance
+     * from the center, and the angle of the position around the center.
+     * 
+     * @param center
+     * @param dist
+     * @param angle in degrees, converted to radians internally
+     * @return
+     */
+    public static PointF getPosition(PointF center, float dist, float angle) {
+
+        PointF p = new PointF((float) (center.x + dist * Math.cos(Math.toRadians(angle))),
+                (float) (center.y + dist * Math.sin(Math.toRadians(angle))));
+        return p;
     }
 }

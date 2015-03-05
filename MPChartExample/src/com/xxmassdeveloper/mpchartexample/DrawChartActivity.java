@@ -1,6 +1,7 @@
 
 package com.xxmassdeveloper.mpchartexample;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -9,14 +10,15 @@ import android.view.WindowManager;
 
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.ChartData;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.interfaces.OnChartValueSelectedListener;
-import com.github.mikephil.charting.interfaces.OnDrawListener;
-import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.listener.OnDrawListener;
 import com.github.mikephil.charting.utils.Highlight;
-import com.github.mikephil.charting.utils.XLabels;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -41,57 +43,60 @@ public class DrawChartActivity extends DemoBase implements OnChartValueSelectedL
 
         mChart = (LineChart) findViewById(R.id.chart1);
 
-        // create a color template, one color per dataset
-        ColorTemplate ct = new ColorTemplate();
-        ct.addColorsForDataSets(ColorTemplate.COLORFUL_COLORS, this);
-        mChart.setColorTemplate(ct);
-
         // listener for selecting and drawing
         mChart.setOnChartValueSelectedListener(this);
         mChart.setOnDrawListener(this);
 
         // enable drawing with the finger
-        mChart.setDrawingEnabled(true);
+        // mChart.setDrawingEnabled(true);
 
-        // enable dragging and scaling
-        mChart.setDragEnabled(true);
+        // mChart.setLineWidth(5f);
+        // mChart.setCircleSize(5f);
 
-        mChart.setDrawYValues(false);
-        mChart.setLineWidth(5f);
-        mChart.setCircleSize(5f);
-        mChart.setYLabelCount(6);
         mChart.setHighlightEnabled(true);
 
         // if disabled, drawn datasets with the finger will not be automatically
         // finished
-        mChart.setAutoFinish(false);
-        
-        mChart.setDrawLegend(false);
+        // mChart.setAutoFinish(true);
+        mChart.setDrawGridBackground(false);
 
         // add dummy-data to the chart
         initWithDummyData();
 
-        mChart.setYRange(-40f, 40f, true);
+        Typeface tf = Typeface.createFromAsset(getAssets(), "OpenSans-Regular.ttf");
+
+        XAxis xl = mChart.getXAxis();
+        xl.setTypeface(tf);
+        xl.setAvoidFirstLastClipping(true);
+
+        YAxis yl = mChart.getAxisLeft();
+        yl.setTypeface(tf);
+
+        mChart.getLegend().setEnabled(false);
+
+        // mChart.setYRange(-40f, 40f, true);
         // call this to reset the changed y-range
-        // mChart.resetYRange(true); 
+        // mChart.resetYRange(true);
     }
 
     private void initWithDummyData() {
         ArrayList<String> xVals = new ArrayList<String>();
         for (int i = 0; i < 24; i++) {
-            xVals.add((i) + "h");
+            xVals.add((i) + ":00");
         }
 
         ArrayList<Entry> yVals = new ArrayList<Entry>();
 
         // create a dataset and give it a type (0)
-        DataSet set1 = new DataSet(yVals, "DataSet");
+        LineDataSet set1 = new LineDataSet(yVals, "DataSet");
+        set1.setLineWidth(3f);
+        set1.setCircleSize(5f);
 
-        ArrayList<DataSet> dataSets = new ArrayList<DataSet>();
+        ArrayList<LineDataSet> dataSets = new ArrayList<LineDataSet>();
         dataSets.add(set1); // add the datasets
 
         // create a data object with the datasets
-        ChartData data = new ChartData(xVals, dataSets);
+        LineData data = new LineData(xVals, dataSets);
 
         mChart.setData(data);
     }
@@ -107,10 +112,9 @@ public class DrawChartActivity extends DemoBase implements OnChartValueSelectedL
 
         switch (item.getItemId()) {
             case R.id.actionToggleValues: {
-                if (mChart.isDrawYValuesEnabled())
-                    mChart.setDrawYValues(false);
-                else
-                    mChart.setDrawYValues(true);
+                for (DataSet<?> set : mChart.getData().getDataSets())
+                    set.setDrawValues(!set.isDrawValuesEnabled());
+
                 mChart.invalidate();
                 break;
             }
@@ -122,33 +126,14 @@ public class DrawChartActivity extends DemoBase implements OnChartValueSelectedL
                 mChart.invalidate();
                 break;
             }
-            case R.id.actionToggleFilled: {
-                if (mChart.isDrawFilledEnabled())
-                    mChart.setDrawFilled(false);
-                else
-                    mChart.setDrawFilled(true);
-                mChart.invalidate();
-                break;
-            }
-            case R.id.actionToggleCircles: {
-                if (mChart.isDrawCirclesEnabled())
-                    mChart.setDrawCircles(false);
-                else
-                    mChart.setDrawCircles(true);
-                mChart.invalidate();
-                break;
-            }
             case R.id.actionToggleStartzero: {
-                if (mChart.isStartAtZeroEnabled())
-                    mChart.setStartAtZero(false);
-                else
-                    mChart.setStartAtZero(true);
-
+                mChart.getAxisLeft().setStartAtZero(!mChart.getAxisLeft().isStartAtZeroEnabled());
+                mChart.getAxisRight().setStartAtZero(!mChart.getAxisRight().isStartAtZeroEnabled());
                 mChart.invalidate();
                 break;
             }
             case R.id.actionToggleAdjustXLegend: {
-                XLabels xLabels = mChart.getXLabels();
+                XAxis xLabels = mChart.getXAxis();
 
                 if (xLabels.isAdjustXLabelsEnabled())
                     xLabels.setAdjustXLabels(false);
@@ -177,10 +162,10 @@ public class DrawChartActivity extends DemoBase implements OnChartValueSelectedL
     }
 
     @Override
-    public void onValuesSelected(Entry[] values, Highlight[] highlights) {
-        Log.i("VALS SELECTED",
-                "Value: " + values[0].getVal() + ", xIndex: " + highlights[0].getXIndex()
-                        + ", DataSet index: " + highlights[0].getDataSetIndex());
+    public void onValueSelected(Entry e, int dataSetIndex, Highlight h) {
+        Log.i("VAL SELECTED",
+                "Value: " + e.getVal() + ", xIndex: " + e.getXIndex()
+                        + ", DataSet index: " + dataSetIndex);
     }
 
     @Override
@@ -199,9 +184,7 @@ public class DrawChartActivity extends DemoBase implements OnChartValueSelectedL
         Log.i(Chart.LOG_TAG, "DataSet drawn. " + dataSet.toSimpleString());
 
         // prepare the legend again
-        mChart.prepareLegend();
-        
-        mChart.calculateLegendOffsets();
+        mChart.getLegendRenderer().computeLegend(mChart.getData(), mChart.getLegend());
     }
 
     @Override

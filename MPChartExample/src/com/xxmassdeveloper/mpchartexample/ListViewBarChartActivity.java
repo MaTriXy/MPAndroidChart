@@ -2,6 +2,7 @@
 package com.xxmassdeveloper.mpchartexample;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,12 +13,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.data.ChartData;
-import com.github.mikephil.charting.data.DataSet;
-import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.XAxis.XAxisPosition;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.XLabels;
-import com.github.mikephil.charting.utils.XLabels.XLabelPosition;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ public class ListViewBarChartActivity extends DemoBase {
         
         ListView lv = (ListView) findViewById(R.id.listView1);
 
-        ArrayList<ChartData> list = new ArrayList<ChartData>();
+        ArrayList<BarData> list = new ArrayList<BarData>();
 
         // 20 items
         for (int i = 0; i < 20; i++) {
@@ -51,23 +53,20 @@ public class ListViewBarChartActivity extends DemoBase {
         lv.setAdapter(cda);
     }
 
-    private class ChartDataAdapter extends ArrayAdapter<ChartData> {
+    private class ChartDataAdapter extends ArrayAdapter<BarData> {
 
-        private ColorTemplate mCt;
         private Typeface mTf;
 
-        public ChartDataAdapter(Context context, List<ChartData> objects) {
+        public ChartDataAdapter(Context context, List<BarData> objects) {
             super(context, 0, objects);
 
-            mCt = new ColorTemplate();
-            mCt.addDataSetColors(ColorTemplate.VORDIPLOM_COLORS, getContext());
             mTf = Typeface.createFromAsset(getAssets(), "OpenSans-Regular.ttf");
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
 
-            ChartData c = getItem(position);
+            BarData data = getItem(position);
 
             ViewHolder holder = null;
 
@@ -86,25 +85,32 @@ public class ListViewBarChartActivity extends DemoBase {
             }
 
             // apply styling
-            holder.chart.setYLabelCount(5);
-            holder.chart.setColorTemplate(mCt);
-            holder.chart.setBarSpace(20f);
-            holder.chart.setYLabelTypeface(mTf);
-            holder.chart.setXLabelTypeface(mTf);
-            holder.chart.setValueTypeface(mTf);
+            data.setValueTypeface(mTf);
             holder.chart.setDescription("");
-            holder.chart.setDrawVerticalGrid(false);
             holder.chart.setDrawGridBackground(false);
+            data.setValueTextColor(Color.WHITE);
 
-            XLabels xl = holder.chart.getXLabels();
-            xl.setCenterXLabelText(true);
-            xl.setPosition(XLabelPosition.BOTTOM);
+            XAxis xAxis = holder.chart.getXAxis();
+            xAxis.setPosition(XAxisPosition.BOTTOM);
+            xAxis.setTypeface(mTf);
+            xAxis.setDrawGridLines(false);
+            
+            YAxis leftAxis = holder.chart.getAxisLeft();
+            leftAxis.setTypeface(mTf);
+            leftAxis.setLabelCount(5);
+            leftAxis.setSpaceTop(15f);
+            
+            YAxis rightAxis = holder.chart.getAxisRight();
+            rightAxis.setTypeface(mTf);
+            rightAxis.setLabelCount(5);
+            rightAxis.setSpaceTop(15f);
 
             // set data
-            holder.chart.setData(c);
+            holder.chart.setData(data);
             
             // do not forget to refresh the chart
-            holder.chart.invalidate();
+//            holder.chart.invalidate();
+            holder.chart.animateY(700);
 
             return convertView;
         }
@@ -120,17 +126,23 @@ public class ListViewBarChartActivity extends DemoBase {
      * 
      * @return
      */
-    private ChartData generateData(int cnt) {
+    private BarData generateData(int cnt) {
 
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<BarEntry> entries = new ArrayList<BarEntry>();
 
         for (int i = 0; i < 12; i++) {
-            entries.add(new Entry((int) (Math.random() * 70) + 30, i));
+            entries.add(new BarEntry((int) (Math.random() * 70) + 30, i));
         }
 
-        DataSet d = new DataSet(entries, "New DataSet " + cnt);
-
-        ChartData cd = new ChartData(getMonths(), d);
+        BarDataSet d = new BarDataSet(entries, "New DataSet " + cnt);    
+        d.setBarSpacePercent(20f);
+        d.setColors(ColorTemplate.VORDIPLOM_COLORS);
+        d.setBarShadowColor(Color.rgb(203, 203, 203));
+        
+        ArrayList<BarDataSet> sets = new ArrayList<BarDataSet>();
+        sets.add(d);
+        
+        BarData cd = new BarData(getMonths(), sets);
         return cd;
     }
 

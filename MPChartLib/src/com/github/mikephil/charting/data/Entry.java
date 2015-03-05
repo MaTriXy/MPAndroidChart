@@ -2,7 +2,8 @@
 package com.github.mikephil.charting.data;
 
 /**
- * Class representing one entry in the chart.
+ * Class representing one entry in the chart. Might contain multiple values.
+ * Might only contain a single value depending on the used constructor.
  * 
  * @author Philipp Jahoda
  */
@@ -14,8 +15,11 @@ public class Entry {
     /** the index on the x-axis */
     private int mXIndex = 0;
 
+    /** optional spot for additional data this Entry represents */
+    private Object mData = null;
+
     /**
-     * A Entry represents one single entry in the chart
+     * A Entry represents one single entry in the chart.
      * 
      * @param val the y value (the actual value of the entry)
      * @param xIndex the corresponding index in the x value array (index on the
@@ -25,6 +29,21 @@ public class Entry {
     public Entry(float val, int xIndex) {
         mVal = val;
         mXIndex = xIndex;
+    }
+
+    /**
+     * A Entry represents one single entry in the chart.
+     * 
+     * @param val the y value (the actual value of the entry)
+     * @param xIndex the corresponding index in the x value array (index on the
+     *            x-axis of the chart, must NOT be higher than the length of the
+     *            x-values String array)
+     * @param data Spot for additional data this Entry represents.
+     */
+    public Entry(float val, int xIndex, Object data) {
+        this(val, xIndex);
+
+        this.mData = data;
     }
 
     /**
@@ -46,7 +65,7 @@ public class Entry {
     }
 
     /**
-     * returns the value the entry represents
+     * Returns the total value the entry represents.
      * 
      * @return
      */
@@ -55,7 +74,7 @@ public class Entry {
     }
 
     /**
-     * sets the value for the entry
+     * Sets the value for the entry.
      * 
      * @param val
      */
@@ -63,62 +82,43 @@ public class Entry {
         this.mVal = val;
     }
 
-    //
+    /**
+     * Returns the data, additional information that this Entry represents, or
+     * null, if no data has been specified.
+     * 
+     * @return
+     */
+    public Object getData() {
+        return mData;
+    }
+
+    /**
+     * Sets additional data this Entry should represents.
+     * 
+     * @param data
+     */
+    public void setData(Object data) {
+        this.mData = data;
+    }
+
     // /**
-    // * Convenience method to create a series of double values
+    // * If this Enry represents mulitple values (e.g. Stacked BarChart), it
+    // will
+    // * return the sum of them, otherwise just the one value it represents.
     // *
-    // * @param yValues
     // * @return
     // */
-    // public static ArrayList<Series> makeSeries(double[] yValues) {
-    // ArrayList<Series> series = new ArrayList<Series>();
-    // for (int i = 0; i < yValues.length; i++) {
-    // series.add(new Series((float) yValues[i], 0, i));
-    // }
-    // return series;
-    // }
+    // public float getSum() {
+    // if (mVals == null)
+    // return mVal;
+    // else {
     //
-    // /**
-    // * Convenience method to create multiple series of different types of
-    // various double value arrays. Each double
-    // array
-    // * represents one type starting at 0.
-    // *
-    // * @param yValues
-    // * @return
-    // */
-    // public static ArrayList<Series> makeMultipleSeries(ArrayList<Double[]>
-    // yValues) {
-    // ArrayList<Series> series = new ArrayList<Series>();
+    // float sum = 0f;
     //
-    // int sizeOfFirst = yValues.get(0).length;
+    // for (int i = 0; i < mVals.length; i++)
+    // sum += mVals[i];
     //
-    // for (int i = 0; i < yValues.size(); i++) {
-    // Double[] curValues = yValues.get(i);
-    // if (curValues.length != sizeOfFirst) {
-    // throw new IllegalArgumentException("Array sizes do not match");
-    // }
-    // for (int j = 0; j < curValues.length; j++) {
-    // series.add(new Series(curValues[j].floatValue(), i, j));
-    // }
-    // }
-    //
-    // return series;
-    // }
-    //
-    // /**
-    // * Convenience method to add a series. The new series has to be the same
-    // size as the old. If you want to create a
-    // * different sized series, please add manually.
-    // *
-    // * @param series
-    // * @param yValues
-    // * @param type
-    // */
-    // public static void addSeries(ArrayList<Series> series, double[] yValues,
-    // int type) {
-    // for (int i = 0; i < yValues.length; i++) {
-    // series.add(new Series((float) yValues[i], type, i));
+    // return sum;
     // }
     // }
 
@@ -128,7 +128,31 @@ public class Entry {
      * @return
      */
     public Entry copy() {
-        return new Entry(mVal, mXIndex);
+        Entry e = new Entry(mVal, mXIndex, mData);
+        return e;
+    }
+
+    /**
+     * Compares value, xIndex and data of the entries. Returns true if entries
+     * are equal, false if not.
+     * 
+     * @param e
+     * @return
+     */
+    public boolean equalTo(Entry e) {
+
+        if (e == null)
+            return false;
+
+        if (e.mData != this.mData)
+            return false;
+        if (e.mXIndex != this.mXIndex)
+            return false;
+
+        if (Math.abs(e.mVal - this.mVal) > 0.00001f)
+            return false;
+
+        return true;
     }
 
     /**
@@ -136,6 +160,6 @@ public class Entry {
      */
     @Override
     public String toString() {
-        return "Entry, xIndex: " + mXIndex + " val: " + mVal;
+        return "Entry, xIndex: " + mXIndex + " val (sum): " + getVal();
     }
 }

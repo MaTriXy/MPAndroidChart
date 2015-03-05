@@ -1,7 +1,10 @@
 
 package com.xxmassdeveloper.mpchartexample;
 
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
@@ -10,22 +13,31 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.data.ChartData;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.Legend.LegendPosition;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.Legend;
-import com.github.mikephil.charting.utils.Legend.LegendPosition;
-import com.github.mikephil.charting.utils.XLabels;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.utils.LargeValueFormatter;
+import com.xxmassdeveloper.mpchartexample.custom.MyMarkerView;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
 
-public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarChangeListener {
+public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarChangeListener,
+        OnChartValueSelectedListener {
 
     private BarChart mChart;
     private SeekBar mSeekBarX, mSeekBarY;
     private TextView tvX, tvY;
+    
+    private Typeface tf;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,46 +56,46 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
         mSeekBarY.setOnSeekBarChangeListener(this);
 
         mChart = (BarChart) findViewById(R.id.chart1);
+        mChart.setOnChartValueSelectedListener(this);
         mChart.setDescription("");
-
-        ColorTemplate ct = new ColorTemplate();
-
-        // add colors for the first dataset
-        ct.addDataSetColors(ColorTemplate.FRESH_COLORS, this);
-
-        // the second dataset only has one color
-        ct.addDataSetColors(new int[] {
-            R.color.liberty_2
-        }, this);
-
-        // add colors for the third dataset
-        ct.addDataSetColors(ColorTemplate.COLORFUL_COLORS, this);
-
-        mChart.setColorTemplate(ct);
-
-        // disable the drawing of values
-        mChart.setDrawYValues(false);
-
-        // disable 3D
-        mChart.set3DEnabled(false);
-        mChart.setYLabelCount(5);
 
         // scaling can now only be done on x- and y-axis separately
         mChart.setPinchZoom(false);
-        
-//        mChart.setDrawLegend(false);
 
-        mSeekBarX.setProgress(45);
+        mChart.setDrawBarShadow(false);
+
+        mChart.setDrawGridBackground(false);
+
+        // create a custom MarkerView (extend MarkerView) and specify the layout
+        // to use for it
+        MyMarkerView mv = new MyMarkerView(this, R.layout.custom_marker_view);
+
+        // define an offset to change the original position of the marker
+        // (optional)
+        // mv.setOffsets(-mv.getMeasuredWidth() / 2, -mv.getMeasuredHeight());
+
+        // set the marker to the chart
+        mChart.setMarkerView(mv);
+
+        mSeekBarX.setProgress(10);
         mSeekBarY.setProgress(100);
-        
+
+        tf = Typeface.createFromAsset(getAssets(), "OpenSans-Regular.ttf");
+
         Legend l = mChart.getLegend();
-        l.setPosition(LegendPosition.RIGHT_OF_CHART);
-        
-//        XLabels xl  = mChart.getXLabels();
-//        xl.setPosition(XLabelPosition.TOP);
-//        
-//        YLabels yl = mChart.getYLabels();
-//        yl.setPosition(YLabelPosition.RIGHT);
+        l.setPosition(LegendPosition.RIGHT_OF_CHART_INSIDE);
+        l.setTypeface(tf);
+
+        XAxis xl = mChart.getXAxis();
+        xl.setTypeface(tf);
+
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.setTypeface(tf);
+        leftAxis.setValueFormatter(new LargeValueFormatter());
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setSpaceTop(25f);
+
+        mChart.getAxisRight().setEnabled(false);
     }
 
     @Override
@@ -97,10 +109,9 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
 
         switch (item.getItemId()) {
             case R.id.actionToggleValues: {
-                if (mChart.isDrawYValuesEnabled())
-                    mChart.setDrawYValues(false);
-                else
-                    mChart.setDrawYValues(true);
+                for (DataSet<?> set : mChart.getData().getDataSets())
+                    set.setDrawValues(!set.isDrawValuesEnabled());
+
                 mChart.invalidate();
                 break;
             }
@@ -110,14 +121,6 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
                 else
                     mChart.setPinchZoom(true);
 
-                mChart.invalidate();
-                break;
-            }
-            case R.id.actionToggle3D: {
-                if (mChart.is3DEnabled())
-                    mChart.set3DEnabled(false);
-                else
-                    mChart.set3DEnabled(true);
                 mChart.invalidate();
                 break;
             }
@@ -138,21 +141,18 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
                 break;
             }
             case R.id.actionToggleStartzero: {
-                if (mChart.isStartAtZeroEnabled())
-                    mChart.setStartAtZero(false);
-                else
-                    mChart.setStartAtZero(true);
-
+                mChart.getAxisLeft().setStartAtZero(!mChart.getAxisLeft().isStartAtZeroEnabled());
+                mChart.getAxisRight().setStartAtZero(!mChart.getAxisRight().isStartAtZeroEnabled());
                 mChart.invalidate();
                 break;
             }
             case R.id.actionToggleAdjustXLegend: {
-                XLabels xLabels = mChart.getXLabels();
-                
-                if (xLabels.isAdjustXLabelsEnabled())
-                    xLabels.setAdjustXLabels(false);
+                XAxis xAxis = mChart.getXAxis();
+
+                if (xAxis.isAdjustXLabelsEnabled())
+                    xAxis.setAdjustXLabels(false);
                 else
-                    xLabels.setAdjustXLabels(true);
+                    xAxis.setAdjustXLabels(true);
 
                 mChart.invalidate();
                 break;
@@ -162,51 +162,76 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
                 mChart.saveToPath("title" + System.currentTimeMillis(), "");
                 break;
             }
+            case R.id.animateX: {
+                mChart.animateX(3000);
+                break;
+            }
+            case R.id.animateY: {
+                mChart.animateY(3000);
+                break;
+            }
+            case R.id.animateXY: {
+
+                mChart.animateXY(3000, 3000);
+                break;
+            }
         }
         return true;
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        
+
         tvX.setText("" + (mSeekBarX.getProgress() + 1));
         tvY.setText("" + (mSeekBarY.getProgress()));
 
         ArrayList<String> xVals = new ArrayList<String>();
         for (int i = 0; i < mSeekBarX.getProgress(); i++) {
-            xVals.add((i) + "");
+            xVals.add((i + 1990) + "");
         }
 
-        ArrayList<Entry> yVals1 = new ArrayList<Entry>();
-        ArrayList<Entry> yVals2 = new ArrayList<Entry>();
-        ArrayList<Entry> yVals3 = new ArrayList<Entry>();
+        ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
+        ArrayList<BarEntry> yVals2 = new ArrayList<BarEntry>();
+        ArrayList<BarEntry> yVals3 = new ArrayList<BarEntry>();
 
-        for (int i = 0; i < mSeekBarX.getProgress() / 3; i++) {
-            float val = (float) (Math.random() * mSeekBarY.getProgress()) + 3;
-            yVals1.add(new Entry(val, i));
+        float mult = mSeekBarY.getProgress() * 10000000f;
+
+        for (int i = 0; i < mSeekBarX.getProgress(); i++) {
+            float val = (float) (Math.random() * mult) + 3;
+            yVals1.add(new BarEntry(val, i));
         }
 
-        for (int i = mSeekBarX.getProgress() / 3; i < mSeekBarX.getProgress() / 3 * 2; i++) {
-            float val = (float) (Math.random() * mSeekBarY.getProgress()) + 3;
-            yVals2.add(new Entry(val, i));
+        for (int i = 0; i < mSeekBarX.getProgress(); i++) {
+            float val = (float) (Math.random() * mult) + 3;
+            yVals2.add(new BarEntry(val, i));
         }
 
-        for (int i = mSeekBarX.getProgress() / 3 * 2; i < mSeekBarX.getProgress(); i++) {
-            float val = (float) (Math.random() * mSeekBarY.getProgress()) + 3;
-            yVals3.add(new Entry(val, i));
+        for (int i = 0; i < mSeekBarX.getProgress(); i++) {
+            float val = (float) (Math.random() * mult) + 3;
+            yVals3.add(new BarEntry(val, i));
         }
 
         // create 3 datasets with different types
-        DataSet set1 = new DataSet(yVals1, "Company A");
-        DataSet set2 = new DataSet(yVals2, "Company B");
-        DataSet set3 = new DataSet(yVals3, "Company C");
-        
-        ArrayList<DataSet> dataSets = new ArrayList<DataSet>();
+        BarDataSet set1 = new BarDataSet(yVals1, "Company A");
+        // set1.setColors(ColorTemplate.createColors(getApplicationContext(),
+        // ColorTemplate.FRESH_COLORS));
+        set1.setColor(Color.rgb(104, 241, 175));
+        BarDataSet set2 = new BarDataSet(yVals2, "Company B");
+        set2.setColor(Color.rgb(164, 228, 251));
+        BarDataSet set3 = new BarDataSet(yVals3, "Company C");
+        set3.setColor(Color.rgb(242, 247, 158));
+
+        ArrayList<BarDataSet> dataSets = new ArrayList<BarDataSet>();
         dataSets.add(set1);
         dataSets.add(set2);
         dataSets.add(set3);
 
-        ChartData data = new ChartData(xVals, dataSets);
+        BarData data = new BarData(xVals, dataSets);
+        data.setValueFormatter(new LargeValueFormatter());
+
+        // add space between the dataset groups in percent of bar-width
+        data.setGroupSpace(80f);
+        data.setValueTypeface(tf);
 
         mChart.setData(data);
         mChart.invalidate();
@@ -222,5 +247,15 @@ public class BarChartActivityMultiDataset extends DemoBase implements OnSeekBarC
     public void onStopTrackingTouch(SeekBar seekBar) {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public void onValueSelected(Entry e, int dataSetIndex, Highlight h) {
+        Log.i("Activity", "Selected: " + e.toString() + ", dataSet: " + dataSetIndex);
+    }
+
+    @Override
+    public void onNothingSelected() {
+        Log.i("Activity", "Nothing selected.");
     }
 }

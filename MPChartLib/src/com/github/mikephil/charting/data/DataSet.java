@@ -1,6 +1,16 @@
 
 package com.github.mikephil.charting.data;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
+
+import com.github.mikephil.charting.components.YAxis.AxisDependency;
+import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.utils.DefaultValueFormatter;
+import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ValueFormatter;
+
 import java.util.ArrayList;
 
 /**
@@ -11,16 +21,19 @@ import java.util.ArrayList;
  * 
  * @author Philipp Jahoda
  */
-public class DataSet {
+public abstract class DataSet<T extends Entry> {
+
+    /** arraylist representing all colors that are used for this DataSet */
+    protected ArrayList<Integer> mColors = null;
 
     /** the entries that this dataset represents / holds together */
-    private ArrayList<Entry> mYVals = null;
+    protected ArrayList<T> mYVals = null;
 
     /** maximum y-value in the y-value array */
-    private float mYMax = 0.0f;
+    protected float mYMax = 0.0f;
 
     /** the minimum y-value in the y-value array */
-    private float mYMin = 0.0f;
+    protected float mYMin = 0.0f;
 
     /** the total sum of all y-values */
     private float mYValueSum = 0f;
@@ -28,6 +41,26 @@ public class DataSet {
     /** label that describes the DataSet or the data the DataSet represents */
     private String mLabel = "DataSet";
 
+    /** flag that indicates if the DataSet is visible or not */
+    private boolean mVisible = true;
+
+    /** if true, y-values are drawn on the chart */
+    protected boolean mDrawValues = true;
+
+    /** the color used for the value-text */
+    private int mValueColor = Color.BLACK;
+
+    /** the size of the value-text labels */
+    private float mValueTextSize = 17f;
+
+    /** the typeface used for the value text */
+    private Typeface mValueTypeface;
+
+    /** custom formatter that is used instead of the auto-formatter if set */
+    protected ValueFormatter mValueFormatter;
+
+    /** this specifies which axis this DataSet should be plotted against */
+    protected AxisDependency mAxisDependency = AxisDependency.LEFT;
 
     /**
      * Creates a new DataSet object with the given values it represents. Also, a
@@ -37,14 +70,24 @@ public class DataSet {
      * @param yVals
      * @param label
      */
-    public DataSet(ArrayList<Entry> yVals, String label) {
+    public DataSet(ArrayList<T> yVals, String label) {
 
-        this.mLabel = label;        
+        this.mLabel = label;
         this.mYVals = yVals;
 
-        if (yVals.size() <= 0) {
-            return;
-        }
+        if (mYVals == null)
+            mYVals = new ArrayList<T>();
+
+        // if (yVals.size() <= 0) {
+        // return;
+        // }
+
+        mColors = new ArrayList<Integer>();
+
+        // default colors
+        // mColors.add(Color.rgb(192, 255, 140));
+        // mColors.add(Color.rgb(255, 247, 140));
+        mColors.add(Color.rgb(140, 234, 255));
 
         calcMinMax();
         calcYValueSum();
@@ -58,32 +101,29 @@ public class DataSet {
         calcYValueSum();
     }
 
-    public DataSet cloneDataSet() {
-        ArrayList<Entry> duplicatedEntries = new ArrayList<Entry>();
-        for (int i = 0; i < mYVals.size(); i++) {
-            Entry entry = mYVals.get(i).copy();
-            duplicatedEntries.add(entry);
-        }
-        DataSet dataSet = new DataSet(duplicatedEntries, mLabel);
-        return dataSet;
-    }
-
     /**
      * calc minimum and maximum y value
      */
-    private void calcMinMax() {
+    protected void calcMinMax() {
         if (mYVals.size() == 0) {
             return;
         }
+
         mYMin = mYVals.get(0).getVal();
         mYMax = mYVals.get(0).getVal();
 
         for (int i = 0; i < mYVals.size(); i++) {
-            if (mYVals.get(i).getVal() < mYMin)
-                mYMin = mYVals.get(i).getVal();
 
-            if (mYVals.get(i).getVal() > mYMax)
-                mYMax = mYVals.get(i).getVal();
+            Entry e = mYVals.get(i);
+
+            if (e != null) {
+
+                if (e.getVal() < mYMin)
+                    mYMin = e.getVal();
+
+                if (e.getVal() > mYMax)
+                    mYMax = e.getVal();
+            }
         }
     }
 
@@ -95,7 +135,9 @@ public class DataSet {
         mYValueSum = 0;
 
         for (int i = 0; i < mYVals.size(); i++) {
-            mYValueSum += Math.abs(mYVals.get(i).getVal());
+            Entry e = mYVals.get(i);
+            if (e != null)
+                mYValueSum += Math.abs(e.getVal());
         }
     }
 
@@ -119,27 +161,39 @@ public class DataSet {
      */
     public float getYValForXIndex(int xIndex) {
 
-        Entry s = getEntryForXIndex(xIndex);
+        Entry e = getEntryForXIndex(xIndex);
 
-        if (s != null)
-            return s.getVal();
+        if (e != null)
+            return e.getVal();
         else
             return Float.NaN;
     }
 
     /**
-     * Returns the first Entry object found at the given xIndex. Returns null if
-     * no Entry object at that index. INFORMATION: This method does calculations
-     * at runtime. Do not over-use in performance critical situations.
+     * Returns the first Entry object found at the given xIndex with binary
+     * search. Returns null if no Entry object at that index. INFORMATION: This
+     * method does calculations at runtime. Do not over-use in performance
+     * critical situations.
      * 
      * @param xIndex
      * @return
      */
-    public Entry getEntryForXIndex(int xIndex) {
+    public T getEntryForXIndex(int x) {
 
-        for (int i = 0; i < mYVals.size(); i++) {
-            if (xIndex == mYVals.get(i).getXIndex())
-                return mYVals.get(i);
+        int low = 0;
+        int high = mYVals.size() - 1;
+
+        while (low <= high) {
+            int m = (high + low) / 2;
+
+            if (x == mYVals.get(m).getXIndex()) {
+                return mYVals.get(m);
+            }
+
+            if (x > mYVals.get(m).getXIndex())
+                low = m + 1;
+            else
+                high = m - 1;
         }
 
         return null;
@@ -153,13 +207,24 @@ public class DataSet {
      * @param xIndex
      * @return
      */
-    public ArrayList<Entry> getEntriesForXIndex(int xIndex) {
+    public ArrayList<T> getEntriesForXIndex(int x) {
 
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<T> entries = new ArrayList<T>();
 
-        for (int i = 0; i < mYVals.size(); i++) {
-            if (xIndex == mYVals.get(i).getXIndex())
-                entries.add(mYVals.get(i));
+        int low = 0;
+        int high = mYVals.size();
+
+        while (low <= high) {
+            int m = (high + low) / 2;
+
+            if (x == mYVals.get(m).getXIndex()) {
+                entries.add(mYVals.get(m));
+            }
+
+            if (x > mYVals.get(m).getXIndex())
+                low = m + 1;
+            else
+                high = m - 1;
         }
 
         return entries;
@@ -170,7 +235,7 @@ public class DataSet {
      * 
      * @return
      */
-    public ArrayList<Entry> getYVals() {
+    public ArrayList<T> getYVals() {
         return mYVals;
     }
 
@@ -230,50 +295,11 @@ public class DataSet {
     }
 
     /**
-     * Convenience method to create multiple DataSets of different types with
-     * various double value arrays. Each double array represents the data of one
-     * DataSet with a type created by this method, starting at 0 (and
-     * incremented).
-     * 
-     * @param yValues
-     * @return
-     */
-    public static ArrayList<DataSet> makeDataSets(ArrayList<Double[]> yValues) {
-
-        ArrayList<DataSet> dataSets = new ArrayList<DataSet>();
-
-        for (int i = 0; i < yValues.size(); i++) {
-
-            Double[] curValues = yValues.get(i);
-
-            ArrayList<Entry> entries = new ArrayList<Entry>();
-
-            for (int j = 0; j < curValues.length; j++) {
-                entries.add(new Entry(curValues[j].floatValue(), j));
-            }
-
-            dataSets.add(new DataSet(entries, "DS " + i));
-        }
-
-        return dataSets;
-    }
-
-    /**
-     * provides an exact copy of the DataSet this method is used on
+     * Provides an exact copy of the DataSet this method is used on.
      * 
      * @return
      */
-    public DataSet copy() {
-
-        ArrayList<Entry> yVals = new ArrayList<Entry>();
-
-        for (int i = 0; i < mYVals.size(); i++) {
-            yVals.add(mYVals.get(i).copy());
-        }
-
-        DataSet copied = new DataSet(yVals, mLabel);
-        return copied;
-    }
+    public abstract DataSet<T> copy();
 
     @Override
     public String toString() {
@@ -304,5 +330,342 @@ public class DataSet {
      */
     public String getLabel() {
         return mLabel;
+    }
+
+    /**
+     * Set the visibility of this DataSet. If not visible, the DataSet will not
+     * be drawn to the chart upon refreshing it.
+     * 
+     * @param visible
+     */
+    public void setVisible(boolean visible) {
+        mVisible = visible;
+    }
+
+    /**
+     * Returns true if this DataSet is visible inside the chart, or false if it
+     * is currently hidden.
+     * 
+     * @return
+     */
+    public boolean isVisible() {
+        return mVisible;
+    }
+
+    /**
+     * Returns the axis this DataSet should be plotted against.
+     * 
+     * @return
+     */
+    public AxisDependency getAxisDependency() {
+        return mAxisDependency;
+    }
+
+    /**
+     * Set the y-axis this DataSet should be plotted against (either LEFT or
+     * RIGHT). Default: LEFT
+     * 
+     * @param dependency
+     */
+    public void setAxisDependency(AxisDependency dependency) {
+        mAxisDependency = dependency;
+    }
+
+    /**
+     * set this to true to draw y-values on the chart NOTE (for bar and
+     * linechart): if "maxvisiblecount" is reached, no values will be drawn even
+     * if this is enabled
+     *
+     * @param enabled
+     */
+    public void setDrawValues(boolean enabled) {
+        this.mDrawValues = enabled;
+    }
+
+    /**
+     * returns true if y-value drawing is enabled, false if not
+     *
+     * @return
+     */
+    public boolean isDrawValuesEnabled() {
+        return mDrawValues;
+    }
+
+    /**
+     * Adds an Entry to the DataSet dynamically. This will also recalculate the
+     * current minimum and maximum values of the DataSet and the value-sum.
+     *
+     * @param d
+     */
+    public void addEntry(Entry e) {
+
+        if (e == null)
+            return;
+
+        float val = e.getVal();
+
+        if (mYVals == null || mYVals.size() <= 0) {
+
+            mYVals = new ArrayList<T>();
+            mYMax = val;
+            mYMin = val;
+        } else {
+
+            if (mYMax < val)
+                mYMax = val;
+            if (mYMin > val)
+                mYMin = val;
+        }
+
+        mYValueSum += val;
+
+        // add the entry
+        mYVals.add((T) e);
+    }
+
+    /**
+     * Removes an Entry from the DataSets entries array. This will also
+     * recalculate the current minimum and maximum values of the DataSet and the
+     * value-sum. Returns true if an Entry was removed, false if no Entry could
+     * be removed.
+     * 
+     * @param e
+     */
+    public boolean removeEntry(T e) {
+
+        if (e == null)
+            return false;
+
+        // remove the entry
+        boolean removed = mYVals.remove(e);
+
+        if (removed) {
+
+            float val = e.getVal();
+            mYValueSum -= val;
+
+            calcMinMax();
+        }
+
+        return removed;
+    }
+
+    /**
+     * Removes the Entry object that has the given xIndex from the DataSet.
+     * Returns true if an Entry was removed, false if no Entry could be removed.
+     * 
+     * @param xIndex
+     */
+    public boolean removeEntry(int xIndex) {
+
+        T e = getEntryForXIndex(xIndex);
+        return removeEntry(e);
+    }
+
+    /** BELOW THIS COLOR HANDLING */
+
+    /**
+     * Sets the colors that should be used fore this DataSet. Colors are reused
+     * as soon as the number of Entries the DataSet represents is higher than
+     * the size of the colors array. If you are using colors from the resources,
+     * make sure that the colors are already prepared (by calling
+     * getResources().getColor(...)) before adding them to the DataSet.
+     * 
+     * @param colors
+     */
+    public void setColors(ArrayList<Integer> colors) {
+        this.mColors = colors;
+    }
+
+    /**
+     * Sets the colors that should be used fore this DataSet. Colors are reused
+     * as soon as the number of Entries the DataSet represents is higher than
+     * the size of the colors array. If you are using colors from the resources,
+     * make sure that the colors are already prepared (by calling
+     * getResources().getColor(...)) before adding them to the DataSet.
+     * 
+     * @param colors
+     */
+    public void setColors(int[] colors) {
+        this.mColors = ColorTemplate.createColors(colors);
+    }
+
+    /**
+     * Sets the colors that should be used fore this DataSet. Colors are reused
+     * as soon as the number of Entries the DataSet represents is higher than
+     * the size of the colors array. You can use
+     * "new int[] { R.color.red, R.color.green, ... }" to provide colors for
+     * this method. Internally, the colors are resolved using
+     * getResources().getColor(...)
+     * 
+     * @param colors
+     */
+    public void setColors(int[] colors, Context c) {
+
+        ArrayList<Integer> clrs = new ArrayList<Integer>();
+
+        for (int color : colors) {
+            clrs.add(c.getResources().getColor(color));
+        }
+
+        mColors = clrs;
+    }
+
+    /**
+     * Adds a new color to the colors array of the DataSet.
+     * 
+     * @param color
+     */
+    public void addColor(int color) {
+        if (mColors == null)
+            mColors = new ArrayList<Integer>();
+        mColors.add(color);
+    }
+
+    /**
+     * Sets the one and ONLY color that should be used for this DataSet.
+     * Internally, this recreates the colors array and adds the specified color.
+     * 
+     * @param color
+     */
+    public void setColor(int color) {
+        resetColors();
+        mColors.add(color);
+    }
+
+    /**
+     * returns all the colors that are set for this DataSet
+     * 
+     * @return
+     */
+    public ArrayList<Integer> getColors() {
+        return mColors;
+    }
+
+    /**
+     * Returns the color at the given index of the DataSet's color array.
+     * Performs a IndexOutOfBounds check by modulus.
+     * 
+     * @param index
+     * @return
+     */
+    public int getColor(int index) {
+        return mColors.get(index % mColors.size());
+    }
+
+    /**
+     * Returns the first color (index 0) of the colors-array this DataSet
+     * contains.
+     * 
+     * @return
+     */
+    public int getColor() {
+        return mColors.get(0);
+    }
+
+    /**
+     * Resets all colors of this DataSet and recreates the colors array.
+     */
+    public void resetColors() {
+        mColors = new ArrayList<Integer>();
+    }
+
+    /**
+     * Returns the position of the provided entry in the DataSets Entry array.
+     * Returns -1 if doesnt exist.
+     * 
+     * @param e
+     * @return
+     */
+    public int getEntryPosition(Entry e) {
+
+        for (int i = 0; i < mYVals.size(); i++) {
+            if (e.equalTo(mYVals.get(i)))
+                return i;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Sets the formatter to be used for drawing the values inside the chart. If
+     * no formatter is set, the chart will automatically determine a reasonable
+     * formatting (concerning decimals) for all the values that are drawn inside
+     * the chart. Use chart.getDefaultValueFormatter() to use the formatter
+     * calculated by the chart.
+     *
+     * @param f
+     */
+    public void setValueFormatter(ValueFormatter f) {
+
+        if (f == null)
+            return;
+        else
+            mValueFormatter = f;
+    }
+
+    /**
+     * Returns the formatter used for drawing the values inside the chart.
+     *
+     * @return
+     */
+    public ValueFormatter getValueFormatter() {
+        if (mValueFormatter == null)
+            return new DefaultValueFormatter(1);
+        return mValueFormatter;
+    }
+
+    /**
+     * If this component has no ValueFormatter or is only equipped with the
+     * default one (no custom set), return true.
+     * 
+     * @return
+     */
+    public boolean needsDefaultFormatter() {
+        if (mValueFormatter == null)
+            return true;
+        if (mValueFormatter instanceof DefaultValueFormatter)
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Sets the color the value-labels of this DataSet should have.
+     * 
+     * @param color
+     */
+    public void setValueTextColor(int color) {
+        mValueColor = color;
+    }
+
+    public int getValueTextColor() {
+        return mValueColor;
+    }
+
+    /**
+     * Sets a Typeface for the value-labels of this DataSet.
+     * 
+     * @param tf
+     */
+    public void setValueTypeface(Typeface tf) {
+        mValueTypeface = tf;
+    }
+
+    public Typeface getValueTypeface() {
+        return mValueTypeface;
+    }
+
+    /**
+     * Sets the text-size of the value-labels of this DataSet in dp.
+     * 
+     * @param size
+     */
+    public void setValueTextSize(float size) {
+        mValueTextSize = Utils.convertDpToPixel(size);
+    }
+
+    public float getValueTextSize() {
+        return mValueTextSize;
     }
 }
