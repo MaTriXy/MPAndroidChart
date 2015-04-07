@@ -23,6 +23,7 @@ import com.github.mikephil.charting.utils.Utils;
 import com.xxmassdeveloper.mpchartexample.AnotherBarActivity;
 import com.xxmassdeveloper.mpchartexample.BarChartActivity;
 import com.xxmassdeveloper.mpchartexample.BarChartActivityMultiDataset;
+import com.xxmassdeveloper.mpchartexample.BarChartActivitySinus;
 import com.xxmassdeveloper.mpchartexample.CandleStickChartActivity;
 import com.xxmassdeveloper.mpchartexample.CombinedChartActivity;
 import com.xxmassdeveloper.mpchartexample.CubicLineChartActivity;
@@ -82,7 +83,7 @@ public class MainActivity extends Activity implements OnItemClickListener {
         objects.add(new ContentItem("Draw Chart",
                 "Demonstration of drawing values into the chart per touch-gesture. With callbacks."));
         objects.add(new ContentItem(
-                "Charts in Fragments, awesome design.",
+                "Charts in ViewPager Fragments",
                 "Demonstration of charts inside ViewPager Fragments. In this example the focus was on the design and look and feel of the chart."));
         objects.add(new ContentItem(
                 "BarChart inside ListView",
@@ -111,9 +112,12 @@ public class MainActivity extends Activity implements OnItemClickListener {
         objects.add(new ContentItem(
                 "Dynamical data adding",
                 "This Activity demonstrates dynamical adding of Entries and DataSets (real time graph)."));
-//        objects.add(new ContentItem(
-//                "Performance Line Chart",
-//                "Renders up to 3000 objects."));
+        objects.add(new ContentItem(
+                "Performance Line Chart",
+                "Renders up to 30.000 objects smoothly."));
+        objects.add(new ContentItem(
+                "Sinus Bar Chart",
+                "A Bar Chart plotting the sinus function with 8.000 values."));
 
         MyAdapter adapter = new MyAdapter(this, objects);
 
@@ -225,6 +229,10 @@ public class MainActivity extends Activity implements OnItemClickListener {
                 break;
             case 22:
                 i = new Intent(this, PerformanceLineChart.class);
+                startActivity(i);
+                break;
+            case 23:
+                i = new Intent(this, BarChartActivitySinus.class);
                 startActivity(i);
                 break;
         }

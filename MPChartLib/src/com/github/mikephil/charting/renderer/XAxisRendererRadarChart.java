@@ -7,6 +7,7 @@ import android.graphics.PointF;
 import com.github.mikephil.charting.charts.RadarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
 public class XAxisRendererRadarChart extends XAxisRenderer {
 
@@ -24,9 +25,9 @@ public class XAxisRendererRadarChart extends XAxisRenderer {
         if (!mXAxis.isEnabled() || !mXAxis.isDrawLabelsEnabled())
             return;
 
-        mAxisPaint.setTypeface(mXAxis.getTypeface());
-        mAxisPaint.setTextSize(mXAxis.getTextSize());
-        mAxisPaint.setColor(mXAxis.getTextColor());
+        mAxisLabelPaint.setTypeface(mXAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mXAxis.getTextSize());
+        mAxisLabelPaint.setColor(mXAxis.getTextColor());
 
         float sliceangle = mChart.getSliceAngle();
 
@@ -45,7 +46,17 @@ public class XAxisRendererRadarChart extends XAxisRenderer {
             PointF p = Utils.getPosition(center, mChart.getYRange() * factor
                     + mXAxis.mLabelWidth / 2f, angle);
 
-            c.drawText(text, p.x, p.y + mXAxis.mLabelHeight / 2f, mAxisPaint);
+            c.drawText(text, p.x, p.y + mXAxis.mLabelHeight / 2f, mAxisLabelPaint);
         }
     }
+
+	/**
+	 * XAxis LimitLines on RadarChart not yet supported.
+	 *
+	 * @param c
+	 */
+	@Override
+	public void renderLimitLines(Canvas c) {
+		// this space intentionally left blank
+	}
 }

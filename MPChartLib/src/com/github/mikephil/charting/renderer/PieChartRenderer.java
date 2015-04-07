@@ -1,12 +1,14 @@
 
 package com.github.mikephil.charting.renderer;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.util.Log;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.charts.PieChart;
@@ -15,8 +17,9 @@ import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.utils.Highlight;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class PieChartRenderer extends DataRenderer {
 
@@ -33,6 +36,11 @@ public class PieChartRenderer extends DataRenderer {
      * chart
      */
     private Paint mCenterTextPaint;
+
+    /** Bitmap for drawing the center hole */
+    protected Bitmap mDrawBitmap;
+
+    protected Canvas mBitmapCanvas;
 
     public PieChartRenderer(PieChart chart, ChartAnimator animator,
             ViewPortHandler viewPortHandler) {
@@ -61,7 +69,21 @@ public class PieChartRenderer extends DataRenderer {
     }
 
     @Override
+    public void initBuffers() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
     public void drawData(Canvas c) {
+
+        if (mDrawBitmap == null) {
+            mDrawBitmap = Bitmap.createBitmap((int) mViewPortHandler.getChartWidth(),
+                    (int) mViewPortHandler.getChartHeight(), Bitmap.Config.ARGB_4444);
+            mBitmapCanvas = new Canvas(mDrawBitmap);
+        }
+
+        mDrawBitmap.eraseColor(Color.TRANSPARENT);
 
         PieData pieData = mChart.getData();
 
@@ -70,6 +92,8 @@ public class PieChartRenderer extends DataRenderer {
             if (set.isVisible())
                 drawDataSet(c, set);
         }
+
+        c.drawBitmap(mDrawBitmap, 0, 0, mRenderPaint);
     }
 
     protected void drawDataSet(Canvas c, PieDataSet dataSet) {
@@ -78,7 +102,7 @@ public class PieChartRenderer extends DataRenderer {
 
         int cnt = 0;
 
-        ArrayList<Entry> entries = dataSet.getYVals();
+        List<Entry> entries = dataSet.getYVals();
         float[] drawAngles = mChart.getDrawAngles();
 
         for (int j = 0; j < entries.size(); j++) {
@@ -95,7 +119,8 @@ public class PieChartRenderer extends DataRenderer {
                         mChart.getData().getIndexOfDataSet(dataSet))) {
 
                     mRenderPaint.setColor(dataSet.getColor(j));
-                    c.drawArc(mChart.getCircleBox(), angle + sliceSpace / 2f,
+                    mBitmapCanvas.drawArc(mChart.getCircleBox(),
+                            angle + sliceSpace / 2f,
                             newangle * mAnimator.getPhaseY()
                                     - sliceSpace / 2f, true, mRenderPaint);
                 }
@@ -124,7 +149,7 @@ public class PieChartRenderer extends DataRenderer {
         float[] drawAngles = mChart.getDrawAngles();
         float[] absoluteAngles = mChart.getAbsoluteAngles();
 
-        float off = r / 2f;
+        float off = r / 3f;
 
         if (mChart.isDrawHoleEnabled()) {
             off = (r - (r / 100f * mChart.getHoleRadius())) / 2f;
@@ -133,7 +158,8 @@ public class PieChartRenderer extends DataRenderer {
         r -= off; // offset to keep things inside the chart
 
         PieData data = mChart.getData();
-        ArrayList<PieDataSet> dataSets = data.getDataSets();
+        List<PieDataSet> dataSets = data.getDataSets();
+        boolean drawXVals = mChart.isDrawSliceTextEnabled();
 
         int cnt = 0;
 
@@ -141,15 +167,15 @@ public class PieChartRenderer extends DataRenderer {
 
             PieDataSet dataSet = dataSets.get(i);
 
-            if (!dataSet.isDrawValuesEnabled())
+            if (!dataSet.isDrawValuesEnabled() && !drawXVals)
                 continue;
 
             // apply the text-styling defined by the DataSet
             applyValueTextStyle(dataSet);
 
-            ArrayList<Entry> entries = dataSet.getYVals();
+            List<Entry> entries = dataSet.getYVals();
 
-            for (int j = 0; j < entries.size() * mAnimator.getPhaseX(); j++) {
+            for (int j = 0, maxEntry = Math.min((int)Math.ceil(entries.size() * mAnimator.getPhaseX()), entries.size()); j < maxEntry; j++) {
 
                 // offset needed to center the drawn text in the slice
                 float offset = drawAngles[cnt] / 2;
@@ -167,7 +193,6 @@ public class PieChartRenderer extends DataRenderer {
 
                 String val = dataSet.getValueFormatter().getFormattedValue(value);
 
-                boolean drawXVals = mChart.isDrawSliceTextEnabled();
                 boolean drawYVals = dataSet.isDrawValuesEnabled();
 
                 // draw everything, depending on settings
@@ -220,7 +245,7 @@ public class PieChartRenderer extends DataRenderer {
             int color = mHolePaint.getColor();
 
             // draw the hole-circle
-            c.drawCircle(center.x, center.y,
+            mBitmapCanvas.drawCircle(center.x, center.y,
                     radius / 100 * holeRadius, mHolePaint);
 
             if (transparentCircleRadius > holeRadius) {
@@ -229,7 +254,7 @@ public class PieChartRenderer extends DataRenderer {
                 mHolePaint.setColor(color & 0x60FFFFFF);
 
                 // draw the transparent-circle
-                c.drawCircle(center.x, center.y,
+                mBitmapCanvas.drawCircle(center.x, center.y,
                         radius / 100 * transparentCircleRadius, mHolePaint);
 
                 mHolePaint.setColor(color);
@@ -252,11 +277,18 @@ public class PieChartRenderer extends DataRenderer {
             // get all lines from the text
             String[] lines = centerText.split("\n");
 
-            // calculate the height for each line
-            float lineHeight = Utils.calcTextHeight(mCenterTextPaint, lines[0]);
-            float linespacing = lineHeight * 0.2f;
+            float maxlineheight = 0f;
 
-            float totalheight = lineHeight * lines.length - linespacing * (lines.length - 1);
+            // calc the maximum line height
+            for (String line : lines) {
+                float curHeight = Utils.calcTextHeight(mCenterTextPaint, line);
+                if (curHeight > maxlineheight)
+                    maxlineheight = curHeight;
+            }
+
+            float linespacing = maxlineheight * 0.25f;
+
+            float totalheight = maxlineheight * lines.length - linespacing * (lines.length - 1);
 
             int cnt = lines.length;
 
@@ -267,7 +299,7 @@ public class PieChartRenderer extends DataRenderer {
                 String line = lines[lines.length - i - 1];
 
                 c.drawText(line, center.x, y
-                        + lineHeight * cnt - totalheight / 2f,
+                        + maxlineheight * cnt - totalheight / 2f,
                         mCenterTextPaint);
                 cnt--;
                 y -= linespacing;
@@ -325,7 +357,8 @@ public class PieChartRenderer extends DataRenderer {
 
             // redefine the rect that contains the arc so that the
             // highlighted pie is not cut off
-            c.drawArc(highlighted, angle + set.getSliceSpace() / 2f, sliceDegrees
+            mBitmapCanvas.drawArc(highlighted, angle + set.getSliceSpace() / 2f, sliceDegrees
+                    * mAnimator.getPhaseY()
                     - set.getSliceSpace() / 2f, true, mRenderPaint);
         }
     }

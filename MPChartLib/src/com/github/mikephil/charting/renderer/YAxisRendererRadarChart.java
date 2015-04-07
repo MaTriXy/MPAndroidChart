@@ -9,8 +9,9 @@ import com.github.mikephil.charting.charts.RadarChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class YAxisRendererRadarChart extends YAxisRenderer {
 
@@ -102,9 +103,9 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
         if (!mYAxis.isEnabled() || !mYAxis.isDrawLabelsEnabled())
             return;
 
-        mAxisPaint.setTypeface(mYAxis.getTypeface());
-        mAxisPaint.setTextSize(mYAxis.getTextSize());
-        mAxisPaint.setColor(mYAxis.getTextColor());
+        mAxisLabelPaint.setTypeface(mYAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mYAxis.getTextSize());
+        mAxisLabelPaint.setColor(mYAxis.getTextColor());
 
         PointF center = mChart.getCenterOffsets();
         float factor = mChart.getFactor();
@@ -122,14 +123,14 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
 
             String label = mYAxis.getFormattedLabel(j);
 
-            c.drawText(label, p.x + 10, p.y, mAxisPaint);
+            c.drawText(label, p.x + 10, p.y, mAxisLabelPaint);
         }
     }
 
     @Override
     public void renderLimitLines(Canvas c) {
 
-        ArrayList<LimitLine> limitLines = mYAxis.getLimitLines();
+        List<LimitLine> limitLines = mYAxis.getLimitLines();
 
         if (limitLines == null)
             return;

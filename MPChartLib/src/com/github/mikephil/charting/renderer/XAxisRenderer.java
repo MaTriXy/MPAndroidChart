@@ -3,14 +3,18 @@ package com.github.mikephil.charting.renderer;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.Path;
 
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.XAxis.XAxisPosition;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class XAxisRenderer extends AxisRenderer {
 
@@ -21,15 +25,15 @@ public class XAxisRenderer extends AxisRenderer {
 
         this.mXAxis = xAxis;
 
-        mAxisPaint.setColor(Color.BLACK);
-        mAxisPaint.setTextAlign(Align.CENTER);
-        mAxisPaint.setTextSize(Utils.convertDpToPixel(10f));
+        mAxisLabelPaint.setColor(Color.BLACK);
+        mAxisLabelPaint.setTextAlign(Align.CENTER);
+        mAxisLabelPaint.setTextSize(Utils.convertDpToPixel(10f));
     }
 
-    public void computeAxis(float xValAverageLength, ArrayList<String> xValues) {
-        
-        mAxisPaint.setTypeface(mXAxis.getTypeface());
-        mAxisPaint.setTextSize(mXAxis.getTextSize());
+    public void computeAxis(float xValAverageLength, List<String> xValues) {
+
+        mAxisLabelPaint.setTypeface(mXAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mXAxis.getTextSize());
 
         StringBuffer a = new StringBuffer();
 
@@ -40,8 +44,8 @@ public class XAxisRenderer extends AxisRenderer {
             a.append("h");
         }
 
-        mXAxis.mLabelWidth = Utils.calcTextWidth(mAxisPaint, a.toString());
-        mXAxis.mLabelHeight = Utils.calcTextHeight(mAxisPaint, "Q");
+        mXAxis.mLabelWidth = Utils.calcTextWidth(mAxisLabelPaint, a.toString());
+        mXAxis.mLabelHeight = Utils.calcTextHeight(mAxisLabelPaint, "Q");
         mXAxis.setValues(xValues);
     }
 
@@ -53,9 +57,9 @@ public class XAxisRenderer extends AxisRenderer {
 
         float yoffset = Utils.convertDpToPixel(4f);
 
-        mAxisPaint.setTypeface(mXAxis.getTypeface());
-        mAxisPaint.setTextSize(mXAxis.getTextSize());
-        mAxisPaint.setColor(mXAxis.getTextColor());
+        mAxisLabelPaint.setTypeface(mXAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mXAxis.getTextSize());
+        mAxisLabelPaint.setColor(mXAxis.getTextColor());
 
         if (mXAxis.getPosition() == XAxisPosition.TOP) {
 
@@ -82,6 +86,8 @@ public class XAxisRenderer extends AxisRenderer {
 
     @Override
     public void renderAxisLine(Canvas c) {
+        
+        calcXBounds(mTrans);
 
         if (!mXAxis.isDrawAxisLineEnabled() || !mXAxis.isEnabled())
             return;
@@ -118,7 +124,16 @@ public class XAxisRenderer extends AxisRenderer {
                 0f, 0f
         };
 
-        for (int i = 0; i < mXAxis.getValues().size(); i += mXAxis.mAxisLabelModulus) {
+        int maxx = mMaxX;
+        int minx = mMinX;
+
+        if (maxx >= mXAxis.getValues().size())
+            maxx = mXAxis.getValues().size()-1;
+
+        if (minx < 0)
+            minx = 0;
+
+        for (int i = minx; i <= maxx; i += mXAxis.mAxisLabelModulus) {
 
             position[0] = i;
 
@@ -132,7 +147,7 @@ public class XAxisRenderer extends AxisRenderer {
 
                     // avoid clipping of the last
                     if (i == mXAxis.getValues().size() - 1 && mXAxis.getValues().size() > 1) {
-                        float width = Utils.calcTextWidth(mAxisPaint, label);
+                        float width = Utils.calcTextWidth(mAxisLabelPaint, label);
 
                         if (width > mViewPortHandler.offsetRight() * 2
                                 && position[0] + width > mViewPortHandler.getChartWidth())
@@ -141,14 +156,14 @@ public class XAxisRenderer extends AxisRenderer {
                         // avoid clipping of the first
                     } else if (i == 0) {
 
-                        float width = Utils.calcTextWidth(mAxisPaint, label);
+                        float width = Utils.calcTextWidth(mAxisLabelPaint, label);
                         position[0] += width / 2;
                     }
                 }
 
                 c.drawText(label, position[0],
                         pos,
-                        mAxisPaint);
+                        mAxisLabelPaint);
             }
         }
     }
@@ -165,8 +180,9 @@ public class XAxisRenderer extends AxisRenderer {
 
         mGridPaint.setColor(mXAxis.getGridColor());
         mGridPaint.setStrokeWidth(mXAxis.getGridLineWidth());
+        mGridPaint.setPathEffect(mXAxis.getGridDashPathEffect());
 
-        for (int i = 0; i < mXAxis.getValues().size(); i += mXAxis.mAxisLabelModulus) {
+        for (int i = mMinX; i <= mMaxX; i += mXAxis.mAxisLabelModulus) {
 
             position[0] = i;
 
@@ -180,4 +196,68 @@ public class XAxisRenderer extends AxisRenderer {
             }
         }
     }
+
+	/**
+	 * Draws the LimitLines associated with this axis to the screen.
+	 *
+	 * @param c
+	 */
+	@Override
+	public void renderLimitLines(Canvas c) {
+
+		List<LimitLine> limitLines = mXAxis.getLimitLines();
+
+		if (limitLines == null || limitLines.size() <= 0)
+			return;
+
+		float[] pts = new float[4];
+		Path limitLinePath = new Path();
+
+		for (int i = 0; i < limitLines.size(); i++) {
+
+			LimitLine l = limitLines.get(i);
+
+			pts[0] = l.getLimit();
+			pts[2] = l.getLimit();
+
+			mTrans.pointValuesToPixel(pts);
+
+			pts[1] = mViewPortHandler.contentTop();
+			pts[3] = mViewPortHandler.contentBottom();
+
+			limitLinePath.moveTo(pts[0], pts[1]);
+			limitLinePath.lineTo(pts[2], pts[3]);
+
+			mLimitLinePaint.setStyle(Paint.Style.STROKE);
+			mLimitLinePaint.setColor(l.getLineColor());
+			mLimitLinePaint.setStrokeWidth(l.getLineWidth());
+			mLimitLinePaint.setPathEffect(l.getDashPathEffect());
+
+			c.drawPath(limitLinePath, mLimitLinePaint);
+			limitLinePath.reset();
+
+			String label = l.getLabel();
+
+			// if drawing the limit-value label is enabled
+			if (label != null && !label.equals("")) {
+
+				float xOffset = l.getLineWidth();
+				float add = Utils.convertDpToPixel(4f);
+
+				mLimitLinePaint.setStyle(l.getTextStyle());
+				mLimitLinePaint.setPathEffect(null);
+				mLimitLinePaint.setColor(l.getTextColor());
+				mLimitLinePaint.setStrokeWidth(0.5f);
+				mLimitLinePaint.setTextSize(l.getTextSize());
+
+				float yOffset = Utils.calcTextHeight(mLimitLinePaint, label) + add / 2f;
+
+				if (l.getLabelPosition() == LimitLine.LimitLabelPosition.POS_RIGHT) {
+					c.drawText(label, pts[0] + xOffset, mViewPortHandler.contentBottom() - add, mLimitLinePaint);
+				} else {
+					c.drawText(label, pts[0] + xOffset, mViewPortHandler.contentTop() + yOffset, mLimitLinePaint);
+				}
+			}
+		}
+	}
 }

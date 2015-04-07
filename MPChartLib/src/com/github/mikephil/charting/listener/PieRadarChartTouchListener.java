@@ -1,6 +1,7 @@
 
 package com.github.mikephil.charting.listener;
 
+import android.annotation.SuppressLint;
 import android.graphics.PointF;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
@@ -8,13 +9,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 
+import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.charts.PieRadarChartBase;
 import com.github.mikephil.charting.charts.RadarChart;
 import com.github.mikephil.charting.utils.Highlight;
 import com.github.mikephil.charting.utils.SelInfo;
 import com.github.mikephil.charting.utils.Utils;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Touchlistener for the PieChart.
@@ -28,18 +30,19 @@ public class PieRadarChartTouchListener extends SimpleOnGestureListener implemen
 
     private PointF mTouchStartPoint = new PointF();
 
-    private PieRadarChartBase mChart;
+    private PieRadarChartBase<?> mChart;
 
     private int mTouchMode = NONE;
 
     private GestureDetector mGestureDetector;
 
-    public PieRadarChartTouchListener(PieRadarChartBase ctx) {
+    public PieRadarChartTouchListener(PieRadarChartBase<?> ctx) {
         this.mChart = ctx;
 
         mGestureDetector = new GestureDetector(ctx.getContext(), this);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View v, MotionEvent e) {
 
@@ -61,7 +64,8 @@ public class PieRadarChartTouchListener extends SimpleOnGestureListener implemen
                     break;
                 case MotionEvent.ACTION_MOVE:
 
-                    if (mTouchMode == NONE && distance(x, mTouchStartPoint.x, y, mTouchStartPoint.y) 
+                    if (mTouchMode == NONE
+                            && distance(x, mTouchStartPoint.x, y, mTouchStartPoint.y)
                             > Utils.convertDpToPixel(8f)) {
                         mTouchMode = ROTATE;
                         mChart.disableScroll();
@@ -119,6 +123,11 @@ public class PieRadarChartTouchListener extends SimpleOnGestureListener implemen
         } else {
 
             float angle = mChart.getAngleForPoint(e.getX(), e.getY());
+
+            if (mChart instanceof PieChart) {
+                angle /= mChart.getAnimator().getPhaseY();
+            }
+
             int index = mChart.getIndexForAngle(angle);
 
             // check if the index could be found
@@ -126,10 +135,10 @@ public class PieRadarChartTouchListener extends SimpleOnGestureListener implemen
 
                 mChart.highlightValues(null);
                 mLastHighlight = null;
- 
+
             } else {
 
-                ArrayList<SelInfo> valsAtIndex = mChart.getYValsAtIndex(index);
+                List<SelInfo> valsAtIndex = mChart.getYValsAtIndex(index);
 
                 int dataSetIndex = 0;
 

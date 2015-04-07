@@ -7,13 +7,12 @@ import com.github.mikephil.charting.utils.DefaultValueFormatter;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ValueFormatter;
 
-import java.util.ArrayList;
-
 /**
  * Class representing the y-axis labels settings and its entries. Only use the
  * setter methods to modify it. Do not access public variables directly. Be
  * aware that not all features the YLabels class provides are suitable for the
- * RadarChart.
+ * RadarChart. Customizations that affect the value range of the axis need to be
+ * applied before setting data for the chart.
  * 
  * @author Philipp Jahoda
  */
@@ -46,10 +45,7 @@ public class YAxis extends AxisBase {
     /** if true, the y-label entries will always start at zero */
     protected boolean mStartAtZero = true;
 
-    /** array of limitlines that can be set for the axis */
-    private ArrayList<LimitLine> mLimitLines;
-
-    /** custom minimum value this axis represents */
+	/** custom minimum value this axis represents */
     protected float mCustomAxisMin = Float.NaN;
 
     /** custom maximum value this axis represents */
@@ -94,11 +90,15 @@ public class YAxis extends AxisBase {
         LEFT, RIGHT
     }
 
+    public YAxis() {
+        super();
+        this.mAxisDependency = AxisDependency.LEFT;
+	}
+
     public YAxis(AxisDependency position) {
         super();
         this.mAxisDependency = position;
-        this.mLimitLines = new ArrayList<LimitLine>();
-    }
+	}
 
     public AxisDependency getAxisDependency() {
         return mAxisDependency;
@@ -187,7 +187,7 @@ public class YAxis extends AxisBase {
 
     /**
      * If this is set to true, the y-axis is inverted which means that low
-     * values are on top of the chart, high values on bottom. 
+     * values are on top of the chart, high values on bottom.
      * 
      * @param enabled
      */
@@ -222,41 +222,7 @@ public class YAxis extends AxisBase {
         return mStartAtZero;
     }
 
-    /**
-     * Adds a new LimitLine to this axis.
-     * 
-     * @param l
-     */
-    public void addLimitLine(LimitLine l) {
-        mLimitLines.add(l);
-    }
-
-    /**
-     * Removes the specified LimitLine from the axis.
-     * 
-     * @param l
-     */
-    public void removeLimitLine(LimitLine l) {
-        mLimitLines.remove(l);
-    }
-
-    /**
-     * Removes all LimitLines from the axis.
-     */
-    public void removeAllLimitLines() {
-        mLimitLines = new ArrayList<LimitLine>();
-    }
-
-    /**
-     * Returns the LimitLines of this axis.
-     * 
-     * @return
-     */
-    public ArrayList<LimitLine> getLimitLines() {
-        return mLimitLines;
-    }
-
-    public float getAxisMinValue() {
+	public float getAxisMinValue() {
         return mCustomAxisMin;
     }
 
@@ -425,5 +391,19 @@ public class YAxis extends AxisBase {
             return true;
 
         return false;
+    }
+
+    /**
+     * Returns true if this axis needs horizontal offset, false if no offset is
+     * needed.
+     * 
+     * @return
+     */
+    public boolean needsOffset() {
+        if (isEnabled() && isDrawLabelsEnabled()
+                && getLabelPosition() == YAxisLabelPosition.OUTSIDE_CHART)
+            return true;
+        else
+            return false;
     }
 }

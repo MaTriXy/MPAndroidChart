@@ -1,32 +1,35 @@
  [![Android Arsenal](http://img.shields.io/badge/Android%20Arsenal-MPAndroidChart-blue.svg?style=flat)](http://android-arsenal.com/details/1/741)  [![Release](https://img.shields.io/github/release/PhilJay/MPAndroidChart.svg?label=maven central)](https://jitpack.io/#PhilJay/MPAndroidChart)      [![API](https://img.shields.io/badge/API-8%2B-green.svg?style=flat)](https://android-arsenal.com/api?level=8)
 
-MPAndroidChart
-=======
-
-A simple charting library for Android, supporting line-, bar-, scatter-, candlestick-, pie- and radarcharts (spider web), as well as scaling, dragging, selecting and animations. **Supporting Android 2.2 (API level 8)** and upwards.
-
 Remember: *It's all about the looks.*
 
-The **experimental** branch might contain new features that are still buggy. It is recommended to be safe and only make use of the code on the **master** branch.
 
-Forks, pull-requests or any other forms of contribution are **always welcome**.
+![alt tag](https://raw.github.com/PhilJay/MPChart/master/design/feature_graphic.png)
+
+**MPAndroidChart** is a powerful & easy to use chart library for Android, supporting line-, bar-, scatter-, candlestick-, pie- and radarcharts (spider web), as well as scaling, dragging (panning), selecting and animations. Works on **Android 2.2 (API level 8)** and upwards.
+
+An **iOS** version of this library is now available, go check it out: [**ios-charts**](https://github.com/danielgindi/ios-charts)
 
 Donations
 -----
 
-If you would like to support this project's further development, the creator of this project or the continuous maintenance of this project, **feel free to donate**. Your donation is highly appreciated.
+**This project needs you!** If you would like to support this project's further development, the creator of this project or the continuous maintenance of this project, **feel free to donate**. Your donation is highly appreciated (and I love food, coffee and beer). Thank you!
 
-PayPal
+**PayPal**
 
-[![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EGBENAC5XBCKS)
+ - [**Donate 5 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7G52RA87ED8NY): Thank's for creating this project, here's a coffee (or some beer) for you!
+ - [**Donate 10 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4C9TPE67F5PUQ): Wow, I am stunned. Let me take you to the movies!
+ - [**Donate 15 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YKMPTFMVK3JMC): I really appreciate your work, let's grab some lunch! 
+ - [**Donate 25 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=H9JA4QX7UHXCY): That's some awesome stuff you did right there, dinner is on me!
+ - [**Donate 50 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZPQVJ2XRBSBYY): I really really want to support this project, great job!
+ - [**Donate 100 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KY7F59RYPCYCQ): You are the man! This project saved me hours (if not days) of struggle and hard work, simply awesome!
+ - [**Donate 300 $**] (https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PGW8CXUHZS2T2): I can afford it and want to assure the further development and maintenance of this project. Furthermore, I also want to show my gratitude to it's creator.
+ - Of course, you can also [**choose what you want to donate**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EGBENAC5XBCKS), all donations are awesome!
 
-Gittip
+**Spread the word**
 
-<a href="https://www.gittip.com/PhilJay/">
-  <img alt="Support via Gittip" src="https://rawgithub.com/twolfson/gittip-badge/0.2.0/dist/gittip.png"/>
-</a>
-
-[![Gratipay](http://img.shields.io/gratipay/PhilJay.svg)](https://gratipay.com/PhilJay)
+<a href="https://twitter.com/intent/tweet?text=Check%20out%20the%20awesome%20MPAndroidChart%20library%20on%20Github:%20https://github.com/PhilJay/MPAndroidChart" target="_blank" title="share to twitter" style="width:100%"><img src="https://github.com/PhilJay/MPAndroidChart/blob/master/design/twitter_icon.png" title="Share on Twitter" width="35" height=35 />
+<a href="https://plus.google.com/share?url=https://github.com/PhilJay/MPAndroidChart" target="_blank" title="share to twitter" style="width:100%"><img src="https://github.com/PhilJay/MPAndroidChart/blob/master/design/googleplus_icon.png" title="Share on Google+" width="35" height=35 />
+<a href="https://www.facebook.com/sharer/sharer.php?u=https://github.com/PhilJay/MPAndroidChart" target="_blank" title="share to twitter" style="width:100%"><img src="https://github.com/PhilJay/MPAndroidChart/blob/master/design/facebook_icon.png" title="Share on Facebook" width="35" height=35 />
 
 Demo
 -----
@@ -38,15 +41,13 @@ For a brief overview of the most important features, please download the **PlayS
 Questions & Issues
 -----
 
-If you are having questions or problems, feel free to contact me. Since I would very much like that other users of this library **can also benefit** from your question, I am asking you to contact me via e-mail **only as a last option**. Instead, you should:
+If you are having questions or problems, you should:
 
  - Make sure you are using the latest version of the library. Check the [**release-section**](https://github.com/PhilJay/MPAndroidChart/releases).
  - Study the [**Documentation-Wiki**](https://github.com/PhilJay/MPAndroidChart/wiki)
  - Search or open questions on [**stackoverflow**](https://stackoverflow.com/search?q=mpandroidchart) with the `mpandroidchart` tag
  - Search [**known issues**](https://github.com/PhilJay/MPAndroidChart/issues) for your problem (open and closed)
  - Create new issues (please **search known issues before**, do not create duplicate issues)
-
-You can let me know via e-mail that you have opened a stackoverflow question so that I might get to answering it more quickly. Thank you.
 
 Features
 =======
@@ -55,6 +56,7 @@ Features
  - Scaling on both axes (with touch-gesture, axes separately or pinch-zoom)
  - Dragging / Panning (with touch-gesture)
  - Combined-Charts (line-, bar-, scatter-, candle-data)
+ - Dual (separate) Y-Axis
  - Finger drawing (draw values into the chart with touch-gesture)
  - Highlighting values (with customizeable popup-views)
  - Multiple / Separate Axes
@@ -65,6 +67,7 @@ Features
  - Animations (build up animations, on both x- and y-axis)
  - Limit lines (providing additional information, maximums, ...)
  - Fully customizeable (paints, typefaces, legends, colors, background, gestures, dashed lines, ...)
+ - Smooth zooming and scrolling for up to 30.000 data points in Line- and BarChart
  
 **Chart types:**
 
@@ -78,6 +81,9 @@ Features
 
  - **LineChart (single DataSet)**
 ![alt tag](https://raw.github.com/PhilJay/MPChart/master/screenshots/linechart.png)
+
+ - **Combined-Chart (bar- and linechart in this case)**
+![alt tag](https://raw.github.com/PhilJay/MPChart/master/screenshots/combined_chart.png)
 
  - **BarChart (with legend, simple design)**
 
@@ -124,7 +130,7 @@ repositories {
 }
 
 dependencies {
-	    compile 'com.github.PhilJay:MPAndroidChart:v2.0.7'
+	    compile 'com.github.PhilJay:MPAndroidChart:v2.0.9'
 }
 ```
 
@@ -139,7 +145,7 @@ dependencies {
 <dependency>
 	    <groupId>com.github.PhilJay</groupId>
 	    <artifactId>MPAndroidChart</artifactId>
-	    <version>v2.0.7</version>
+	    <version>v2.0.9</version>
 </dependency>
 ```
 
@@ -179,4 +185,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-**Special thanks** to [mikegr](https://github.com/mikegr) and [ph1lb4](https://github.com/ph1lb4) for their contributions to this project.
+**Special thanks** to [danielgindi](https://github.com/danielgindi), [mikegr](https://github.com/mikegr), [ph1lb4](https://github.com/ph1lb4) and [jitpack.io](https://github.com/jitpack-io) for their contributions to this project.

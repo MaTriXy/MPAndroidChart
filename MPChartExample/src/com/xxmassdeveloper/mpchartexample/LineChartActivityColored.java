@@ -8,9 +8,6 @@ import android.view.WindowManager;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.Legend.LegendForm;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -84,13 +81,7 @@ public class LineChartActivityColored extends DemoBase {
 
         // get the legend (only possible after setting data)
         Legend l = chart.getLegend();
-
-        // modify the legend ...
-        // l.setPosition(LegendPosition.LEFT_OF_CHART);
-        l.setForm(LegendForm.CIRCLE);
-        l.setFormSize(6f);
-        l.setTextColor(Color.WHITE);
-        l.setTypeface(mTf);
+        l.setEnabled(false);
 
         chart.getAxisLeft().setEnabled(false);
         chart.getAxisRight().setEnabled(false);

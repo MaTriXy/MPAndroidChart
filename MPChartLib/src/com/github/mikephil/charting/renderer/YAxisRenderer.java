@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.Path;
 
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition;
@@ -14,26 +15,21 @@ import com.github.mikephil.charting.components.YAxis.YAxisLabelPosition;
 import com.github.mikephil.charting.utils.PointD;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class YAxisRenderer extends AxisRenderer {
 
-    /** paint used for the limit lines */
-    protected Paint mLimitLinePaint;
-
-    protected YAxis mYAxis;
+	protected YAxis mYAxis;
 
     public YAxisRenderer(ViewPortHandler viewPortHandler, YAxis yAxis, Transformer trans) {
         super(viewPortHandler, trans);
 
         this.mYAxis = yAxis;
 
-        mAxisPaint.setColor(Color.BLACK);
-        mAxisPaint.setTextSize(Utils.convertDpToPixel(10f));
-
-        mLimitLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mLimitLinePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        mAxisLabelPaint.setColor(Color.BLACK);
+        mAxisLabelPaint.setTextSize(Utils.convertDpToPixel(10f));
     }
 
     /**
@@ -58,11 +54,8 @@ public class YAxisRenderer extends AxisRenderer {
                 yMax = (float) p1.y;
             } else {
 
-                if (!mYAxis.isStartAtZeroEnabled())
-                    yMin = (float) Math.min(p1.y, p2.y);
-                else
-                    yMin = 0;
-                yMax = (float) Math.max(p1.y, p2.y);
+                yMin = (float) p1.y;
+                yMax = (float) p2.y;
             }
         }
 
@@ -159,12 +152,12 @@ public class YAxisRenderer extends AxisRenderer {
 
         mTrans.pointValuesToPixel(positions);
 
-        mAxisPaint.setTypeface(mYAxis.getTypeface());
-        mAxisPaint.setTextSize(mYAxis.getTextSize());
-        mAxisPaint.setColor(mYAxis.getTextColor());
+        mAxisLabelPaint.setTypeface(mYAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mYAxis.getTextSize());
+        mAxisLabelPaint.setColor(mYAxis.getTextColor());
 
         float xoffset = mYAxis.getXOffset();
-        float yoffset = Utils.calcTextHeight(mAxisPaint, "A") / 2.5f;
+        float yoffset = Utils.calcTextHeight(mAxisLabelPaint, "A") / 2.5f;
 
         AxisDependency dependency = mYAxis.getAxisDependency();
         YAxisLabelPosition labelPosition = mYAxis.getLabelPosition();
@@ -174,20 +167,20 @@ public class YAxisRenderer extends AxisRenderer {
         if (dependency == AxisDependency.LEFT) {
 
             if (labelPosition == YAxisLabelPosition.OUTSIDE_CHART) {
-                mAxisPaint.setTextAlign(Align.RIGHT);
+                mAxisLabelPaint.setTextAlign(Align.RIGHT);
                 xPos = mViewPortHandler.offsetLeft() - xoffset;
             } else {
-                mAxisPaint.setTextAlign(Align.LEFT);
+                mAxisLabelPaint.setTextAlign(Align.LEFT);
                 xPos = mViewPortHandler.offsetLeft() + xoffset;
             }
 
         } else {
 
             if (labelPosition == YAxisLabelPosition.OUTSIDE_CHART) {
-                mAxisPaint.setTextAlign(Align.LEFT);
+                mAxisLabelPaint.setTextAlign(Align.LEFT);
                 xPos = mViewPortHandler.contentRight() + xoffset;
             } else {
-                mAxisPaint.setTextAlign(Align.RIGHT);
+                mAxisLabelPaint.setTextAlign(Align.RIGHT);
                 xPos = mViewPortHandler.contentRight() - xoffset;
             }
         }
@@ -231,7 +224,7 @@ public class YAxisRenderer extends AxisRenderer {
             if (!mYAxis.isDrawTopYLabelEntryEnabled() && i >= mYAxis.mEntryCount - 1)
                 return;
 
-            c.drawText(text, fixedPosition, positions[i * 2 + 1] + offset, mAxisPaint);
+            c.drawText(text, fixedPosition, positions[i * 2 + 1] + offset, mAxisLabelPaint);
         }
     }
 
@@ -246,6 +239,9 @@ public class YAxisRenderer extends AxisRenderer {
 
         mGridPaint.setColor(mYAxis.getGridColor());
         mGridPaint.setStrokeWidth(mYAxis.getGridLineWidth());
+        mGridPaint.setPathEffect(mYAxis.getGridDashPathEffect());
+
+        Path gridLinePath = new Path();
 
         // draw the horizontal grid
         for (int i = 0; i < mYAxis.mEntryCount; i++) {
@@ -253,9 +249,13 @@ public class YAxisRenderer extends AxisRenderer {
             position[1] = mYAxis.mEntries[i];
             mTrans.pointValuesToPixel(position);
 
-            c.drawLine(mViewPortHandler.offsetLeft(), position[1], mViewPortHandler.contentRight(),
-                    position[1],
-                    mGridPaint);
+            gridLinePath.moveTo(mViewPortHandler.offsetLeft(), position[1]);
+            gridLinePath.lineTo(mViewPortHandler.contentRight(),
+                    position[1]);
+
+            c.drawPath(gridLinePath, mGridPaint);
+
+            gridLinePath.reset();
         }
     }
 
@@ -264,32 +264,36 @@ public class YAxisRenderer extends AxisRenderer {
      * 
      * @param c
      */
-    public void renderLimitLines(Canvas c) {
+    @Override
+	public void renderLimitLines(Canvas c) {
 
-        ArrayList<LimitLine> limitLines = mYAxis.getLimitLines();
+        List<LimitLine> limitLines = mYAxis.getLimitLines();
 
         if (limitLines == null || limitLines.size() <= 0)
             return;
 
-        float[] pts = new float[4];
+        float[] pts = new float[2];
+        Path limitLinePath = new Path();
 
         for (int i = 0; i < limitLines.size(); i++) {
 
             LimitLine l = limitLines.get(i);
+            
+            mLimitLinePaint.setStyle(Paint.Style.STROKE);
+            mLimitLinePaint.setColor(l.getLineColor());
+            mLimitLinePaint.setStrokeWidth(l.getLineWidth());
+            mLimitLinePaint.setPathEffect(l.getDashPathEffect());
 
             pts[1] = l.getLimit();
-            pts[3] = l.getLimit();
 
             mTrans.pointValuesToPixel(pts);
 
-            pts[0] = mViewPortHandler.contentLeft();
-            pts[2] = mViewPortHandler.contentRight();
-
-            mLimitLinePaint.setColor(l.getLineColor());
-            mLimitLinePaint.setPathEffect(l.getDashPathEffect());
-            mLimitLinePaint.setStrokeWidth(l.getLineWidth());
-
-            c.drawLines(pts, mLimitLinePaint);
+            limitLinePath.moveTo(mViewPortHandler.contentLeft(), pts[1]);
+            limitLinePath.lineTo(mViewPortHandler.contentRight(), pts[1]);
+            
+            c.drawPath(limitLinePath, mLimitLinePaint);
+            limitLinePath.reset();
+            // c.drawLines(pts, mLimitLinePaint);
 
             String label = l.getLabel();
 
@@ -300,6 +304,7 @@ public class YAxisRenderer extends AxisRenderer {
                 float yOffset = l.getLineWidth() + Utils.calcTextHeight(mLimitLinePaint, label)
                         / 2f;
 
+                mLimitLinePaint.setStyle(l.getTextStyle());
                 mLimitLinePaint.setPathEffect(null);
                 mLimitLinePaint.setColor(l.getTextColor());
                 mLimitLinePaint.setStrokeWidth(0.5f);

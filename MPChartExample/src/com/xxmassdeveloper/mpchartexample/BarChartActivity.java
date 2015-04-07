@@ -23,6 +23,7 @@ import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.XAxis.XAxisPosition;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.components.YAxis.AxisDependency;
+import com.github.mikephil.charting.components.YAxis.YAxisLabelPosition;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
@@ -63,7 +64,7 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         mChart = (BarChart) findViewById(R.id.chart1);
         mChart.setOnChartValueSelectedListener(this);
 
-        mChart.setDrawBarShadow(true);
+        mChart.setDrawBarShadow(false);
         mChart.setDrawValueAboveBar(true);
 
         mChart.setDescription("");
@@ -89,6 +90,7 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         xAxis.setPosition(XAxisPosition.BOTTOM);
         xAxis.setTypeface(mTf);
         xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
         
         ValueFormatter custom = new MyValueFormatter();
 
@@ -96,12 +98,22 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         leftAxis.setTypeface(mTf);
         leftAxis.setLabelCount(8);
         leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
 
         YAxis rightAxis = mChart.getAxisRight();
         rightAxis.setDrawGridLines(false);
         rightAxis.setTypeface(mTf);
         rightAxis.setLabelCount(8);
         rightAxis.setValueFormatter(custom);
+        rightAxis.setSpaceTop(15f);
+        
+        Legend l = mChart.getLegend();
+        l.setPosition(LegendPosition.BELOW_CHART_LEFT);
+        l.setForm(LegendForm.SQUARE);
+        l.setFormSize(9f);
+        l.setTextSize(11f);
+        l.setXEntrySpace(4f);
 
         setData(12, 50);
 
@@ -111,13 +123,6 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
 
         mSeekBarY.setOnSeekBarChangeListener(this);
         mSeekBarX.setOnSeekBarChangeListener(this);
-
-        Legend l = mChart.getLegend();
-        l.setPosition(LegendPosition.BELOW_CHART_LEFT);
-        l.setForm(LegendForm.SQUARE);
-        l.setFormSize(9f);
-        l.setTextSize(11f);
-        l.setXEntrySpace(4f);
 
         // mChart.setDrawLegend(false);
     }
@@ -226,7 +231,7 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         tvX.setText("" + (mSeekBarX.getProgress() + 1));
         tvY.setText("" + (mSeekBarY.getProgress()));
 
-        setData(mSeekBarX.getProgress(), mSeekBarY.getProgress());
+        setData(mSeekBarX.getProgress() + 1, mSeekBarY.getProgress());
         mChart.invalidate();
     }
 

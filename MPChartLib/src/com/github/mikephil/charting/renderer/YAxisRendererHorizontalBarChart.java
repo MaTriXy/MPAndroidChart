@@ -2,20 +2,29 @@
 package com.github.mikephil.charting.renderer;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.Path;
 
+import com.github.mikephil.charting.components.LimitLine;
+import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.components.YAxis.AxisDependency;
 import com.github.mikephil.charting.components.YAxis.YAxisLabelPosition;
 import com.github.mikephil.charting.utils.PointD;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
+
+import java.util.List;
 
 public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
 
     public YAxisRendererHorizontalBarChart(ViewPortHandler viewPortHandler, YAxis yAxis,
             Transformer trans) {
         super(viewPortHandler, yAxis, trans);
+        
+        mLimitLinePaint.setTextAlign(Align.LEFT);
     }
 
     /**
@@ -39,12 +48,8 @@ public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
                 yMin = (float) p1.x;
                 yMax = (float) p2.x;
             } else {
-
-                if (!mYAxis.isStartAtZeroEnabled())
-                    yMin = (float) Math.min(p1.x, p2.x);
-                else
-                    yMin = 0;
-                yMax = (float) Math.max(p1.x, p2.x);
+                yMin = (float) p2.x;
+                yMax = (float) p1.x;
             }
         }
 
@@ -71,12 +76,12 @@ public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
 
         mTrans.pointValuesToPixel(positions);
 
-        mAxisPaint.setTypeface(mYAxis.getTypeface());
-        mAxisPaint.setTextSize(mYAxis.getTextSize());
-        mAxisPaint.setColor(mYAxis.getTextColor());
-        mAxisPaint.setTextAlign(Align.CENTER);
+        mAxisLabelPaint.setTypeface(mYAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mYAxis.getTextSize());
+        mAxisLabelPaint.setColor(mYAxis.getTextColor());
+        mAxisLabelPaint.setTextAlign(Align.CENTER);
 
-        float yoffset = Utils.calcTextHeight(mAxisPaint, "A") + mYAxis.getYOffset();
+        float yoffset = Utils.calcTextHeight(mAxisLabelPaint, "A") + mYAxis.getYOffset();
 
         AxisDependency dependency = mYAxis.getAxisDependency();
         YAxisLabelPosition labelPosition = mYAxis.getLabelPosition();
@@ -136,9 +141,9 @@ public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
     @Override
     protected void drawYLabels(Canvas c, float fixedPosition, float[] positions, float offset) {
         
-        mAxisPaint.setTypeface(mYAxis.getTypeface());
-        mAxisPaint.setTextSize(mYAxis.getTextSize());
-        mAxisPaint.setColor(mYAxis.getTextColor());
+        mAxisLabelPaint.setTypeface(mYAxis.getTypeface());
+        mAxisLabelPaint.setTextSize(mYAxis.getTextSize());
+        mAxisLabelPaint.setColor(mYAxis.getTextColor());
 
         for (int i = 0; i < mYAxis.mEntryCount; i++) {
 
@@ -147,7 +152,7 @@ public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
             if (!mYAxis.isDrawTopYLabelEntryEnabled() && i >= mYAxis.mEntryCount - 1)
                 return;
 
-            c.drawText(text, positions[i * 2], fixedPosition - offset, mAxisPaint);
+            c.drawText(text, positions[i * 2], fixedPosition - offset, mAxisLabelPaint);
         }
     }
 
@@ -172,6 +177,71 @@ public class YAxisRendererHorizontalBarChart extends YAxisRenderer {
             c.drawLine(position[0], mViewPortHandler.contentTop(), position[0],
                     mViewPortHandler.contentBottom(),
                     mGridPaint);
+        }
+    }
+    
+    /**
+     * Draws the LimitLines associated with this axis to the screen.
+	 * This is the standard XAxis renderer using the YAxis limit lines.
+     *
+     * @param c
+     */
+    @Override
+    public void renderLimitLines(Canvas c) {
+
+        List<LimitLine> limitLines = mYAxis.getLimitLines();
+
+        if (limitLines == null || limitLines.size() <= 0)
+            return;
+
+        float[] pts = new float[4];
+        Path limitLinePath = new Path();
+               
+        for (int i = 0; i < limitLines.size(); i++) {
+
+            LimitLine l = limitLines.get(i);
+            
+            pts[0] = l.getLimit();
+            pts[2] = l.getLimit();
+
+            mTrans.pointValuesToPixel(pts);
+
+            pts[1] = mViewPortHandler.contentTop();
+            pts[3] = mViewPortHandler.contentBottom();
+            
+            limitLinePath.moveTo(pts[0], pts[1]);
+            limitLinePath.lineTo(pts[2], pts[3]);
+
+			mLimitLinePaint.setStyle(Paint.Style.STROKE);
+            mLimitLinePaint.setColor(l.getLineColor());
+            mLimitLinePaint.setPathEffect(l.getDashPathEffect());
+            mLimitLinePaint.setStrokeWidth(l.getLineWidth());
+
+            c.drawPath(limitLinePath, mLimitLinePaint);
+            limitLinePath.reset();
+
+            String label = l.getLabel();
+
+            // if drawing the limit-value label is enabled
+            if (label != null && !label.equals("")) {
+
+                float xOffset = l.getLineWidth();
+                float add = Utils.convertDpToPixel(4f);
+
+				mLimitLinePaint.setStyle(l.getTextStyle());
+                mLimitLinePaint.setPathEffect(null);
+                mLimitLinePaint.setColor(l.getTextColor());
+                mLimitLinePaint.setStrokeWidth(0.5f);
+                mLimitLinePaint.setTextSize(l.getTextSize());
+                
+                float yOffset = Utils.calcTextHeight(mLimitLinePaint, label) + add / 2f;
+
+                if (l.getLabelPosition() == LimitLabelPosition.POS_RIGHT) {
+                    c.drawText(label, pts[0] + xOffset, mViewPortHandler.contentBottom() - add, mLimitLinePaint);
+                } else {
+                    c.drawText(label, pts[0] + xOffset, mViewPortHandler.contentTop() + yOffset, mLimitLinePaint);
+                }
+            }
         }
     }
 }

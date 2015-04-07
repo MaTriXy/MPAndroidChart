@@ -8,9 +8,8 @@ import android.graphics.RectF;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.renderer.ViewPortHandler;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Transformer class that contains all matrices and is responsible for
@@ -26,7 +25,7 @@ public class Transformer {
     /** matrix for handling the different offsets of the chart */
     protected Matrix mMatrixOffset = new Matrix();
 
-    private ViewPortHandler mViewPortHandler;
+    protected ViewPortHandler mViewPortHandler;
 
     public Transformer(ViewPortHandler viewPortHandler) {
         this.mViewPortHandler = viewPortHandler;
@@ -40,10 +39,8 @@ public class Transformer {
      */
     public void prepareMatrixValuePx(float xChartMin, float deltaX, float deltaY, float yChartMin) {
 
-        float scaleX = (float) ((mViewPortHandler.getChartWidth() - mViewPortHandler.offsetRight() - mViewPortHandler
-                .offsetLeft()) / deltaX);
-        float scaleY = (float) ((mViewPortHandler.getChartHeight() - mViewPortHandler.offsetTop() - mViewPortHandler
-                .offsetBottom()) / deltaY);
+        float scaleX = (float) ((mViewPortHandler.contentWidth()) / deltaX);
+        float scaleY = (float) ((mViewPortHandler.contentHeight()) / deltaY);
 
         // setup all matrices
         mMatrixValueToPx.reset();
@@ -95,13 +92,13 @@ public class Transformer {
     }
 
     /**
-     * Transforms an arraylist of Entry into a float array containing the x and
+     * Transforms an List of Entry into a float array containing the x and
      * y values transformed with all matrices for the SCATTERCHART.
      * 
      * @param entries
      * @return
      */
-    public float[] generateTransformedValuesScatter(ArrayList<? extends Entry> entries,
+    public float[] generateTransformedValuesScatter(List<? extends Entry> entries,
             float phaseY) {
 
         float[] valuePoints = new float[entries.size() * 2];
@@ -122,20 +119,22 @@ public class Transformer {
     }
     
     /**
-     * Transforms an arraylist of Entry into a float array containing the x and
+     * Transforms an List of Entry into a float array containing the x and
      * y values transformed with all matrices for the LINECHART.
      * 
      * @param entries
      * @return
      */
-    public float[] generateTransformedValuesLine(ArrayList<? extends Entry> entries,
-            float phaseY) {
+    public float[] generateTransformedValuesLine(List<? extends Entry> entries,
+            float phaseX, float phaseY, int from, int to) {
 
-        float[] valuePoints = new float[entries.size() * 2];
+        final int count = (int)Math.ceil((to - from) * phaseX) * 2;
 
-        for (int j = 0; j < valuePoints.length; j += 2) {
+        float[] valuePoints = new float[count];
 
-            Entry e = entries.get(j / 2);
+        for (int j = 0; j < count; j += 2) {
+
+            Entry e = entries.get(j / 2 + from);
 
             if (e != null) {
                 valuePoints[j] = e.getXIndex();
@@ -149,20 +148,22 @@ public class Transformer {
     }
     
     /**
-     * Transforms an arraylist of Entry into a float array containing the x and
+     * Transforms an List of Entry into a float array containing the x and
      * y values transformed with all matrices for the CANDLESTICKCHART.
      * 
      * @param entries
      * @return
      */
-    public float[] generateTransformedValuesCandle(ArrayList<CandleEntry> entries,
-            float phaseY) {
+    public float[] generateTransformedValuesCandle(List<CandleEntry> entries,
+           float phaseX, float phaseY, int from, int to) {
 
-        float[] valuePoints = new float[entries.size() * 2];
+        final int count = (int)Math.ceil((to - from) * phaseX) * 2;
 
-        for (int j = 0; j < valuePoints.length; j += 2) {
+        float[] valuePoints = new float[count];
 
-            CandleEntry e = entries.get(j / 2);
+        for (int j = 0; j < count; j += 2) {
+
+            CandleEntry e = entries.get(j / 2 + from);
 
             if (e != null) {
                 valuePoints[j] = e.getXIndex();
@@ -176,14 +177,14 @@ public class Transformer {
     }
 
     /**
-     * Transforms an arraylist of Entry into a float array containing the x and
+     * Transforms an List of Entry into a float array containing the x and
      * y values transformed with all matrices for the BARCHART.
      * 
      * @param entries
      * @param dataSet the dataset index
      * @return
      */
-    public float[] generateTransformedValuesBarChart(ArrayList<? extends Entry> entries,
+    public float[] generateTransformedValuesBarChart(List<? extends Entry> entries,
             int dataSet, BarData bd, float phaseY) {
 
         float[] valuePoints = new float[entries.size() * 2];
@@ -210,14 +211,14 @@ public class Transformer {
     }
     
     /**
-     * Transforms an arraylist of Entry into a float array containing the x and
+     * Transforms an List of Entry into a float array containing the x and
      * y values transformed with all matrices for the BARCHART.
      * 
      * @param entries
      * @param dataSet the dataset index
      * @return
      */
-    public float[] generateTransformedValuesHorizontalBarChart(ArrayList<? extends Entry> entries,
+    public float[] generateTransformedValuesHorizontalBarChart(List<? extends Entry> entries,
             int dataSet, BarData bd, float phaseY) {
 
         float[] valuePoints = new float[entries.size() * 2];
@@ -261,7 +262,7 @@ public class Transformer {
      * 
      * @param paths
      */
-    public void pathValuesToPixel(ArrayList<Path> paths) {
+    public void pathValuesToPixel(List<Path> paths) {
 
         for (int i = 0; i < paths.size(); i++) {
             pathValueToPixel(paths.get(i));
@@ -336,7 +337,7 @@ public class Transformer {
      * 
      * @param rects
      */
-    public void rectValuesToPixel(ArrayList<RectF> rects) {
+    public void rectValuesToPixel(List<RectF> rects) {
 
         for (int i = 0; i < rects.size(); i++)
             rectValueToPixel(rects.get(i));
@@ -393,7 +394,7 @@ public class Transformer {
     // *
     // * @param paths
     // */
-    // public void transformRectsTouch(ArrayList<RectF> rects) {
+    // public void transformRectsTouch(List<RectF> rects) {
     // for (int i = 0; i < rects.size(); i++) {
     // mMatrixTouch.mapRect(rects.get(i));
     // }
@@ -404,7 +405,7 @@ public class Transformer {
     // *
     // * @param paths
     // */
-    // public void transformPathsTouch(ArrayList<Path> paths) {
+    // public void transformPathsTouch(List<Path> paths) {
     // for (int i = 0; i < paths.size(); i++) {
     // paths.get(i).transform(mMatrixTouch);
     // }

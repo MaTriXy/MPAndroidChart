@@ -90,18 +90,19 @@ public class HorizontalBarChartActivity extends DemoBase implements OnSeekBarCha
         xl.setDrawAxisLine(true);
         xl.setDrawGridLines(true);
         xl.setGridLineWidth(0.3f);
-        // xl.setEnabled(false);
 
         YAxis yl = mChart.getAxisLeft();
         yl.setTypeface(tf);
         yl.setDrawAxisLine(true);
         yl.setDrawGridLines(true);
         yl.setGridLineWidth(0.3f);
+//        yl.setInverted(true);
 
         YAxis yr = mChart.getAxisRight();
         yr.setTypeface(tf);
         yr.setDrawAxisLine(true);
         yr.setDrawGridLines(false);
+//        yr.setInverted(true);
 
         setData(12, 50);
         mChart.animateY(2500);
@@ -224,7 +225,7 @@ public class HorizontalBarChartActivity extends DemoBase implements OnSeekBarCha
         tvX.setText("" + (mSeekBarX.getProgress() + 1));
         tvY.setText("" + (mSeekBarY.getProgress()));
 
-        setData(mSeekBarX.getProgress(), mSeekBarY.getProgress());
+        setData(mSeekBarX.getProgress() + 1, mSeekBarY.getProgress());
         mChart.invalidate();
     }
 

@@ -12,6 +12,7 @@ import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ValueFormatter;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The DataSet class represents one group or type of entries (Entry) in the
@@ -23,11 +24,11 @@ import java.util.ArrayList;
  */
 public abstract class DataSet<T extends Entry> {
 
-    /** arraylist representing all colors that are used for this DataSet */
-    protected ArrayList<Integer> mColors = null;
+    /** List representing all colors that are used for this DataSet */
+    protected List<Integer> mColors = null;
 
     /** the entries that this dataset represents / holds together */
-    protected ArrayList<T> mYVals = null;
+    protected List<T> mYVals = null;
 
     /** maximum y-value in the y-value array */
     protected float mYMax = 0.0f;
@@ -70,23 +71,17 @@ public abstract class DataSet<T extends Entry> {
      * @param yVals
      * @param label
      */
-    public DataSet(ArrayList<T> yVals, String label) {
+    public DataSet(List<T> yVals, String label) {
 
         this.mLabel = label;
         this.mYVals = yVals;
 
         if (mYVals == null)
             mYVals = new ArrayList<T>();
-
-        // if (yVals.size() <= 0) {
-        // return;
-        // }
-
+        
         mColors = new ArrayList<Integer>();
 
-        // default colors
-        // mColors.add(Color.rgb(192, 255, 140));
-        // mColors.add(Color.rgb(255, 247, 140));
+        // default color
         mColors.add(Color.rgb(140, 234, 255));
 
         calcMinMax();
@@ -171,9 +166,10 @@ public abstract class DataSet<T extends Entry> {
 
     /**
      * Returns the first Entry object found at the given xIndex with binary
-     * search. Returns null if no Entry object at that index. INFORMATION: This
-     * method does calculations at runtime. Do not over-use in performance
-     * critical situations.
+     * search. If the no Entry at the specifed x-index is found, this method
+     * returns the Entry at the closest x-index. Returns null if no Entry object
+     * at that index. INFORMATION: This method does calculations at runtime. Do
+     * not over-use in performance critical situations.
      * 
      * @param xIndex
      * @return
@@ -182,11 +178,15 @@ public abstract class DataSet<T extends Entry> {
 
         int low = 0;
         int high = mYVals.size() - 1;
+        T closest = null;
 
         while (low <= high) {
             int m = (high + low) / 2;
 
             if (x == mYVals.get(m).getXIndex()) {
+                while (m > 0 && mYVals.get(m - 1).getXIndex() == x)
+                    m--;
+
                 return mYVals.get(m);
             }
 
@@ -194,9 +194,11 @@ public abstract class DataSet<T extends Entry> {
                 low = m + 1;
             else
                 high = m - 1;
+
+            closest = mYVals.get(m);
         }
 
-        return null;
+        return closest;
     }
 
     /**
@@ -207,21 +209,37 @@ public abstract class DataSet<T extends Entry> {
      * @param xIndex
      * @return
      */
-    public ArrayList<T> getEntriesForXIndex(int x) {
+    public List<T> getEntriesForXIndex(int x) {
 
-        ArrayList<T> entries = new ArrayList<T>();
+        List<T> entries = new ArrayList<T>();
 
         int low = 0;
-        int high = mYVals.size();
+        int high = mYVals.size() - 1;
 
         while (low <= high) {
             int m = (high + low) / 2;
+            T entry = mYVals.get(m);
 
-            if (x == mYVals.get(m).getXIndex()) {
-                entries.add(mYVals.get(m));
+            if (x == entry.getXIndex()) {
+                while (m > 0 && mYVals.get(m - 1).getXIndex() == x)
+                    m--;
+
+                high = mYVals.size();
+                for (; m < high; m++)
+                {
+                    entry = mYVals.get(m);
+                    if (entry.getXIndex() == x)
+                    {
+                        entries.add(entry);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
 
-            if (x > mYVals.get(m).getXIndex())
+            if (x > entry.getXIndex())
                 low = m + 1;
             else
                 high = m - 1;
@@ -235,7 +253,7 @@ public abstract class DataSet<T extends Entry> {
      * 
      * @return
      */
-    public ArrayList<T> getYVals() {
+    public List<T> getYVals() {
         return mYVals;
     }
 
@@ -267,13 +285,13 @@ public abstract class DataSet<T extends Entry> {
     }
 
     /**
-     * returns the type of the DataSet, specified via constructor
+     * Returns the number of entries this DataSet holds.
      * 
      * @return
      */
-    // public int getType() {
-    // return mType;
-    // }
+    public int getValueCount() {
+        return mYVals.size();
+    }
 
     /**
      * The xIndex of an Entry object is provided. This method returns the actual
@@ -324,8 +342,15 @@ public abstract class DataSet<T extends Entry> {
     }
 
     /**
+     * Sets the label string that describes the DataSet.
+     *
+     * @return
+     */
+    public void setLabel(String label) { mLabel = label; }
+
+    /**
      * Returns the label string that describes the DataSet.
-     * 
+     *
      * @return
      */
     public String getLabel() {
@@ -397,6 +422,7 @@ public abstract class DataSet<T extends Entry> {
      *
      * @param d
      */
+    @SuppressWarnings("unchecked")
     public void addEntry(Entry e) {
 
         if (e == null)
@@ -473,7 +499,7 @@ public abstract class DataSet<T extends Entry> {
      * 
      * @param colors
      */
-    public void setColors(ArrayList<Integer> colors) {
+    public void setColors(List<Integer> colors) {
         this.mColors = colors;
     }
 
@@ -502,7 +528,7 @@ public abstract class DataSet<T extends Entry> {
      */
     public void setColors(int[] colors, Context c) {
 
-        ArrayList<Integer> clrs = new ArrayList<Integer>();
+        List<Integer> clrs = new ArrayList<Integer>();
 
         for (int color : colors) {
             clrs.add(c.getResources().getColor(color));
@@ -538,7 +564,7 @@ public abstract class DataSet<T extends Entry> {
      * 
      * @return
      */
-    public ArrayList<Integer> getColors() {
+    public List<Integer> getColors() {
         return mColors;
     }
 
@@ -572,7 +598,7 @@ public abstract class DataSet<T extends Entry> {
 
     /**
      * Returns the position of the provided entry in the DataSets Entry array.
-     * Returns -1 if doesnt exist.
+     * Returns -1 if doesn't exist.
      * 
      * @param e
      * @return
@@ -665,7 +691,30 @@ public abstract class DataSet<T extends Entry> {
         mValueTextSize = Utils.convertDpToPixel(size);
     }
 
+    /**
+     * Returns the text-size of the labels that are displayed above the values.
+     * 
+     * @return
+     */
     public float getValueTextSize() {
         return mValueTextSize;
+    }
+
+    /**
+     * Checks if this DataSet contains the specified Entry. Returns true if so,
+     * false if not. NOTE: Performance is pretty bad on this one, do not
+     * over-use in performance critical situations.
+     * 
+     * @param e
+     * @return
+     */
+    public boolean contains(Entry e) {
+
+        for (Entry entry : mYVals) {
+            if (entry.equals(e))
+                return true;
+        }
+
+        return false;
     }
 }

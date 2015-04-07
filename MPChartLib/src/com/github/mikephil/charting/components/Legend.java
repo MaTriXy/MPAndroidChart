@@ -5,7 +5,7 @@ import android.graphics.Paint;
 
 import com.github.mikephil.charting.utils.Utils;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class representing the legend of the chart. The legend will contain one entry
@@ -17,11 +17,18 @@ import java.util.ArrayList;
 public class Legend extends ComponentBase {
 
     public enum LegendPosition {
-        RIGHT_OF_CHART, RIGHT_OF_CHART_CENTER, RIGHT_OF_CHART_INSIDE, BELOW_CHART_LEFT, BELOW_CHART_RIGHT, BELOW_CHART_CENTER, PIECHART_CENTER
+        RIGHT_OF_CHART, RIGHT_OF_CHART_CENTER, RIGHT_OF_CHART_INSIDE,
+        LEFT_OF_CHART, LEFT_OF_CHART_CENTER, LEFT_OF_CHART_INSIDE,
+        BELOW_CHART_LEFT, BELOW_CHART_RIGHT, BELOW_CHART_CENTER,
+        PIECHART_CENTER
     }
 
     public enum LegendForm {
         SQUARE, CIRCLE, LINE
+    }
+
+    public enum LegendDirection {
+        LEFT_TO_RIGHT, RIGHT_TO_LEFT
     }
 
     /** the legend colors */
@@ -32,6 +39,9 @@ public class Legend extends ComponentBase {
 
     /** the position relative to the chart the legend is drawn on */
     private LegendPosition mPosition = LegendPosition.BELOW_CHART_LEFT;
+
+    /** the text direction for the legend */
+    private LegendDirection mDirection = LegendDirection.LEFT_TO_RIGHT;
 
     /** the shape/form the legend colors are drawn in */
     private LegendForm mShape = LegendForm.SQUARE;
@@ -100,7 +110,7 @@ public class Legend extends ComponentBase {
      * @param colors
      * @param labels
      */
-    public Legend(ArrayList<Integer> colors, ArrayList<String> labels) {
+    public Legend(List<Integer> colors, List<String> labels) {
         this();
 
         if (colors == null || labels == null) {
@@ -114,6 +124,14 @@ public class Legend extends ComponentBase {
 
         this.mColors = Utils.convertIntegers(colors);
         this.mLabels = Utils.convertStrings(labels);
+    }
+    
+    public void setColors(List<Integer> colors) {
+        mColors = Utils.convertIntegers(colors);;
+    }
+    
+    public void setLabels(List<String> labels) {
+        mLabels = Utils.convertStrings(labels);;
     }
 
     /**
@@ -189,13 +207,7 @@ public class Legend extends ComponentBase {
      * 
      * @param labels
      */
-    public void setLegendLabels(String[] labels) {
-
-        if (mColors.length != labels.length) {
-            throw new IllegalArgumentException(
-                    "colors array and labels array need to be of same size");
-        }
-
+    public void setLabels(String[] labels) {
         this.mLabels = labels;
     }
 
@@ -225,6 +237,24 @@ public class Legend extends ComponentBase {
      */
     public void setPosition(LegendPosition pos) {
         mPosition = pos;
+    }
+
+    /**
+     * returns the text direction of the legend
+     *
+     * @return
+     */
+    public LegendDirection getDirection() {
+        return mDirection;
+    }
+
+    /**
+     * sets the text direction of the legend
+     *
+     * @param pos
+     */
+    public void setDirection(LegendDirection pos) {
+        mDirection = pos;
     }
 
     /**
@@ -322,28 +352,28 @@ public class Legend extends ComponentBase {
         this.mFormToTextSpace = Utils.convertDpToPixel(space);
     }
 
-    /**
-     * applies the state from the legend in the parameter to this legend (except
-     * colors, labels and offsets)
-     * 
-     * @param l
-     */
-    public void apply(Legend l) {
-
-        mPosition = l.mPosition;
-        mShape = l.mShape;
-        mTypeface = l.mTypeface;
-        mFormSize = l.mFormSize;
-        mXEntrySpace = l.mXEntrySpace;
-        mYEntrySpace = l.mYEntrySpace;
-        mFormToTextSpace = l.mFormToTextSpace;
-        mTextSize = l.mTextSize;
-        mStackSpace = l.mStackSpace;
-        mTextColor = l.mTextColor;
-        mEnabled = l.mEnabled;
-        mXOffset = l.mXOffset;
-        mYOffset = l.mYOffset;
-    }
+//    /**
+//     * applies the state from the legend in the parameter to this legend (except
+//     * colors, labels and offsets)
+//     * 
+//     * @param l
+//     */
+//    public void apply(Legend l) {
+//
+//        mPosition = l.mPosition;
+//        mShape = l.mShape;
+//        mTypeface = l.mTypeface;
+//        mFormSize = l.mFormSize;
+//        mXEntrySpace = l.mXEntrySpace;
+//        mYEntrySpace = l.mYEntrySpace;
+//        mFormToTextSpace = l.mFormToTextSpace;
+//        mTextSize = l.mTextSize;
+//        mStackSpace = l.mStackSpace;
+//        mTextColor = l.mTextColor;
+//        mEnabled = l.mEnabled;
+//        mXOffset = l.mXOffset;
+//        mYOffset = l.mYOffset;
+//    }
 
     /**
      * returns the space that is left out between stacked forms (with no label)
@@ -381,10 +411,14 @@ public class Legend extends ComponentBase {
                 if (mColors[i] != -2)
                     width += mFormSize + mFormToTextSpace;
 
-                width += Utils.calcTextWidth(labelpaint, mLabels[i])
-                        + mXEntrySpace;
+                width += Utils.calcTextWidth(labelpaint, mLabels[i]);
+
+                if (i < mLabels.length - 1)
+                    width += mXEntrySpace;
             } else {
-                width += mFormSize + mStackSpace;
+                width += mFormSize;
+                if (i < mLabels.length - 1)
+                    width += mStackSpace;
             }
         }
 
@@ -406,8 +440,10 @@ public class Legend extends ComponentBase {
             // grouped forms have null labels
             if (mLabels[i] != null) {
 
-                height += Utils.calcTextHeight(labelpaint, mLabels[i])
-                        + mYEntrySpace;
+                height += Utils.calcTextHeight(labelpaint, mLabels[i]);
+
+                if (i < mLabels.length - 1)
+                    height += mYEntrySpace;
             }
         }
 
@@ -435,6 +471,8 @@ public class Legend extends ComponentBase {
 
         if (mPosition == LegendPosition.RIGHT_OF_CHART
                 || mPosition == LegendPosition.RIGHT_OF_CHART_CENTER
+                || mPosition == LegendPosition.LEFT_OF_CHART
+                || mPosition == LegendPosition.LEFT_OF_CHART_CENTER
                 || mPosition == LegendPosition.PIECHART_CENTER) {
             mNeededWidth = getMaximumEntryWidth(labelpaint);
             mNeededHeight = getFullHeight(labelpaint);
