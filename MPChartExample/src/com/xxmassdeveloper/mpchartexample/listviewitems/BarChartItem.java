@@ -60,13 +60,15 @@ public class BarChartItem extends ChartItem {
         
         YAxis leftAxis = holder.chart.getAxisLeft();
         leftAxis.setTypeface(mTf);
-        leftAxis.setLabelCount(5);
+        leftAxis.setLabelCount(5, false);
         leftAxis.setSpaceTop(20f);
+        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
        
         YAxis rightAxis = holder.chart.getAxisRight();
         rightAxis.setTypeface(mTf);
-        rightAxis.setLabelCount(5);
+        rightAxis.setLabelCount(5, false);
         rightAxis.setSpaceTop(20f);
+        rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
 
         mChartData.setValueTypeface(mTf);
         

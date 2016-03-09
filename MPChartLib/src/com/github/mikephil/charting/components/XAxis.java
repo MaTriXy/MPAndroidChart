@@ -1,6 +1,10 @@
 
 package com.github.mikephil.charting.components;
 
+import com.github.mikephil.charting.formatter.DefaultXAxisValueFormatter;
+import com.github.mikephil.charting.formatter.XAxisValueFormatter;
+import com.github.mikephil.charting.utils.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,16 +21,33 @@ public class XAxis extends AxisBase {
     protected List<String> mValues = new ArrayList<String>();
 
     /**
-     * width of the x-axis labels in pixels - this is calculated by the
-     * calcTextWidth() method of the utils
+     * width of the x-axis labels in pixels - this is automatically
+     * calculated by the computeAxis() methods in the renderers
      */
     public int mLabelWidth = 1;
 
     /**
-     * height of the x-axis labels in pixels - this is calculated by the
-     * calcTextHeight() method of the utils
+     * height of the x-axis labels in pixels - this is automatically
+     * calculated by the computeAxis() methods in the renderers
      */
     public int mLabelHeight = 1;
+
+    /**
+     * width of the (rotated) x-axis labels in pixels - this is automatically
+     * calculated by the computeAxis() methods in the renderers
+     */
+    public int mLabelRotatedWidth = 1;
+
+    /**
+     * height of the (rotated) x-axis labels in pixels - this is automatically
+     * calculated by the computeAxis() methods in the renderers
+     */
+    public int mLabelRotatedHeight = 1;
+
+    /**
+     * This is the angle for drawing the X axis labels (in degrees)
+     */
+    protected float mLabelRotationAngle = 0f;
 
     /**
      * the space that should be left out (in characters) between the x-axis
@@ -42,12 +63,10 @@ public class XAxis extends AxisBase {
     public int mAxisLabelModulus = 1;
 
     /**
-     * the modulus that indicates if a value at a specified index in an
-     * array(list) for the y-axis-labels is drawn or not. If index % modulus ==
-     * 0 DRAW, else dont draw. THIS IS ONLY FOR HORIZONTAL BARCHART.
+     * Is axisLabelModulus a custom value or auto calculated? If false, then
+     * it's auto, if true, then custom. default: false (automatic modulus)
      */
-    public int mYAxisLabelModulus = 1;
-
+    private boolean mIsAxisModulusCustom = false;
     /**
      * if set to true, the chart will avoid that the first and last label entry
      * in the chart "clip" off the edge of the chart
@@ -55,10 +74,9 @@ public class XAxis extends AxisBase {
     private boolean mAvoidFirstLastClipping = false;
 
     /**
-     * if set to true, the x-axis label entries will adjust themselves when
-     * scaling the graph
+     * Custom formatter for adjusting x-value strings
      */
-    protected boolean mAdjustXAxisLabels = true;
+    protected XAxisValueFormatter mXAxisValueFormatter = new DefaultXAxisValueFormatter();
 
     /** the position of the x-labels relative to the chart */
     private XAxisPosition mPosition = XAxisPosition.TOP;
@@ -67,29 +85,11 @@ public class XAxis extends AxisBase {
     public enum XAxisPosition {
         TOP, BOTTOM, BOTH_SIDED, TOP_INSIDE, BOTTOM_INSIDE
     }
-    
+
     public XAxis() {
         super();
-    }
 
-    /**
-     * if set to true, the x-label entries will adjust themselves when scaling
-     * the graph default: true
-     * 
-     * @param enabled
-     */
-    public void setAdjustXLabels(boolean enabled) {
-        mAdjustXAxisLabels = enabled;
-    }
-
-    /**
-     * returns true if the x-labels adjust themselves when scaling the graph,
-     * false if not
-     * 
-     * @return
-     */
-    public boolean isAdjustXLabelsEnabled() {
-        return mAdjustXAxisLabels;
+        mYOffset = Utils.convertDpToPixel(4.f); // -3
     }
 
     /**
@@ -109,20 +109,72 @@ public class XAxis extends AxisBase {
     }
 
     /**
-     * Sets the space (in characters) that should be left out between the x-axis
-     * labels, default 4
-     * 
-     * @param space
+     * returns the angle for drawing the X axis labels (in degrees)
      */
-    public void setSpaceBetweenLabels(int space) {
-        mSpaceBetweenLabels = space;
+    public float getLabelRotationAngle() {
+        return mLabelRotationAngle;
+    }
+
+    /**
+     * sets the angle for drawing the X axis labels (in degrees)
+     *
+     * @param angle the angle in degrees
+     */
+    public void setLabelRotationAngle(float angle) {
+        mLabelRotationAngle = angle;
+    }
+
+    /**
+     * Sets the space (in characters) that should be left out between the x-axis
+     * labels, default 4. This only applies if the number of labels that will be
+     * skipped in between drawn axis labels is not custom set.
+     * 
+     * @param spaceCharacters
+     */
+    public void setSpaceBetweenLabels(int spaceCharacters) {
+        mSpaceBetweenLabels = spaceCharacters;
+    }
+
+    /**
+     * Sets the number of labels that should be skipped on the axis before the
+     * next label is drawn. This will disable the feature that automatically
+     * calculates an adequate space between the axis labels and set the number
+     * of labels to be skipped to the fixed number provided by this method. Call
+     * resetLabelsToSkip(...) to re-enable automatic calculation.
+     * 
+     * @param count
+     */
+    public void setLabelsToSkip(int count) {
+
+        if (count < 0)
+            count = 0;
+
+        mIsAxisModulusCustom = true;
+        mAxisLabelModulus = count + 1;
+    }
+
+    /**
+     * Calling this will disable a custom number of labels to be skipped (set by
+     * setLabelsToSkip(...)) while drawing the x-axis. Instead, the number of
+     * values to skip will again be calculated automatically.
+     */
+    public void resetLabelsToSkip() {
+        mIsAxisModulusCustom = false;
+    }
+
+    /**
+     * Returns true if a custom axis-modulus has been set that determines the
+     * number of labels to skip when drawing.
+     * 
+     * @return
+     */
+    public boolean isAxisModulusCustom() {
+        return mIsAxisModulusCustom;
     }
 
     /**
      * Returns the space (in characters) that should be left out between the
      * x-axis labels
-     * 
-     * @param space
      */
     public int getSpaceBetweenLabels() {
         return mSpaceBetweenLabels;
@@ -164,7 +216,30 @@ public class XAxis extends AxisBase {
     public List<String> getValues() {
         return mValues;
     }
-    
+
+
+    /**
+     * Sets a custom XAxisValueFormatter for the data object that allows custom-formatting
+     * of all x-values before rendering them. Provide null to reset back to the
+     * default formatting.
+     *
+     * @param formatter
+     */
+    public void setValueFormatter(XAxisValueFormatter formatter) {
+        if(formatter == null)
+            mXAxisValueFormatter = new DefaultXAxisValueFormatter();
+        else
+            mXAxisValueFormatter = formatter;
+    }
+
+    /**
+     * Returns the custom XAxisValueFormatter that is set for this data object.
+     * @return
+     */
+    public XAxisValueFormatter getValueFormatter() {
+        return mXAxisValueFormatter;
+    }
+
     @Override
     public String getLongestLabel() {
 

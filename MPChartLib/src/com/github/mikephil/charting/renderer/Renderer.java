@@ -1,7 +1,7 @@
 
 package com.github.mikephil.charting.renderer;
 
-import com.github.mikephil.charting.utils.Transformer;
+import com.github.mikephil.charting.interfaces.dataprovider.BarLineScatterCandleBubbleDataProvider;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 /**
@@ -16,8 +16,10 @@ public abstract class Renderer {
      */
     protected ViewPortHandler mViewPortHandler;
 
+    /** the minimum value on the x-axis that should be plotted */
     protected int mMinX = 0;
 
+    /** the maximum value on the x-axis that should be plotted */
     protected int mMaxX = 0;
 
     public Renderer(ViewPortHandler viewPortHandler) {
@@ -43,18 +45,19 @@ public abstract class Renderer {
 
     /**
      * Calculates the minimum and maximum x-value the chart can currently
-     * display (with the given zoom level).
+     * display (with the given zoom level). -> mMinX, mMaxX
      * 
-     * @param trans
+     * @param dataProvider
+     * @param xAxisModulus
      */
-    protected void calcXBounds(Transformer trans) {
-
-        double minx = trans.getValuesByTouchPoint(mViewPortHandler.contentLeft(), 0).x;
-        double maxx = trans.getValuesByTouchPoint(mViewPortHandler.contentRight(), 0).x;
-
-        if (!Double.isInfinite(minx))
-            mMinX = (int) minx;
-        if (!Double.isInfinite(maxx))
-            mMaxX = (int) Math.ceil(maxx);
+    public void calcXBounds(BarLineScatterCandleBubbleDataProvider dataProvider, int xAxisModulus) {
+        
+        int low = dataProvider.getLowestVisibleXIndex();
+        int high = dataProvider.getHighestVisibleXIndex();
+        
+        int subLow = (low % xAxisModulus == 0) ? xAxisModulus : 0;
+        
+        mMinX = Math.max((low / xAxisModulus) * (xAxisModulus) - subLow, 0);
+        mMaxX = Math.min((high / xAxisModulus) * (xAxisModulus) + xAxisModulus, (int) dataProvider.getXChartMax());
     }
 }

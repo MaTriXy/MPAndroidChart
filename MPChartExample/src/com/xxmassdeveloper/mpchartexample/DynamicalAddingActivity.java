@@ -13,9 +13,10 @@ import com.github.mikephil.charting.components.YAxis.AxisDependency;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class DynamicalAddingActivity extends DemoBase implements OnChartValueSel
         
         if(data != null) {
 
-            LineDataSet set = data.getDataSetByIndex(0);
+            ILineDataSet set = data.getDataSetByIndex(0);
             // set.addEntry(...); // can be called as well
 
             if (set == null) {
@@ -71,14 +72,11 @@ public class DynamicalAddingActivity extends DemoBase implements OnChartValueSel
             // let the chart know it's data has changed
             mChart.notifyDataSetChanged();
             
-//            mChart.setVisibleXRange(6);
-//            mChart.setVisibleYRange(30, AxisDependency.LEFT);
+            mChart.setVisibleXRangeMaximum(6);
+            mChart.setVisibleYRangeMaximum(15, AxisDependency.LEFT);
 //            
 //            // this automatically refreshes the chart (calls invalidate())
-//            mChart.moveViewTo(data.getXValCount()-7, 55f, AxisDependency.LEFT);
-
-            // redraw the chart
-            mChart.invalidate();   
+            mChart.moveViewTo(data.getXValCount()-7, 50f, AxisDependency.LEFT);
         }
     }
 
@@ -88,7 +86,7 @@ public class DynamicalAddingActivity extends DemoBase implements OnChartValueSel
         
         if(data != null) {
          
-            LineDataSet set = data.getDataSetByIndex(0);
+            ILineDataSet set = data.getDataSetByIndex(0);
 
             if (set != null) {
 
@@ -128,7 +126,7 @@ public class DynamicalAddingActivity extends DemoBase implements OnChartValueSel
 
             LineDataSet set = new LineDataSet(yVals, "DataSet " + count);
             set.setLineWidth(2.5f);
-            set.setCircleSize(4.5f);
+            set.setCircleRadius(4.5f);
 
             int color = mColors[count % mColors.length];
 
@@ -211,7 +209,7 @@ public class DynamicalAddingActivity extends DemoBase implements OnChartValueSel
 
         LineDataSet set = new LineDataSet(null, "DataSet 1");
         set.setLineWidth(2.5f);
-        set.setCircleSize(4.5f);
+        set.setCircleRadius(4.5f);
         set.setColor(Color.rgb(240, 99, 99));
         set.setCircleColor(Color.rgb(240, 99, 99));
         set.setHighLightColor(Color.rgb(190, 190, 190));

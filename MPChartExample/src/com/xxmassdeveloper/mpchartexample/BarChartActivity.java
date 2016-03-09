@@ -27,14 +27,15 @@ import com.github.mikephil.charting.components.YAxis.YAxisLabelPosition;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.filter.Approximator;
 import com.github.mikephil.charting.data.filter.Approximator.ApproximatorType;
+import com.github.mikephil.charting.formatter.YAxisValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
-import com.github.mikephil.charting.utils.Highlight;
-import com.github.mikephil.charting.utils.ValueFormatter;
-import com.xxmassdeveloper.mpchartexample.custom.MyValueFormatter;
+import com.xxmassdeveloper.mpchartexample.custom.MyYAxisValueFormatter;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
     protected BarChart mChart;
     private SeekBar mSeekBarX, mSeekBarY;
     private TextView tvX, tvY;
-    
+
     private Typeface mTf;
 
     @Override
@@ -76,11 +77,6 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         // scaling can now only be done on x- and y-axis separately
         mChart.setPinchZoom(false);
 
-        // draw shadows for each bar that show the maximum value
-        // mChart.setDrawBarShadow(true);
-
-        // mChart.setDrawXLabels(false);
-
         mChart.setDrawGridBackground(false);
         // mChart.setDrawYLabels(false);
 
@@ -91,29 +87,35 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         xAxis.setTypeface(mTf);
         xAxis.setDrawGridLines(false);
         xAxis.setSpaceBetweenLabels(2);
-        
-        ValueFormatter custom = new MyValueFormatter();
+
+        YAxisValueFormatter custom = new MyYAxisValueFormatter();
 
         YAxis leftAxis = mChart.getAxisLeft();
         leftAxis.setTypeface(mTf);
-        leftAxis.setLabelCount(8);
+        leftAxis.setLabelCount(8, false);
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
+        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
 
         YAxis rightAxis = mChart.getAxisRight();
         rightAxis.setDrawGridLines(false);
         rightAxis.setTypeface(mTf);
-        rightAxis.setLabelCount(8);
+        rightAxis.setLabelCount(8, false);
         rightAxis.setValueFormatter(custom);
         rightAxis.setSpaceTop(15f);
-        
+        rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
         Legend l = mChart.getLegend();
         l.setPosition(LegendPosition.BELOW_CHART_LEFT);
         l.setForm(LegendForm.SQUARE);
         l.setFormSize(9f);
         l.setTextSize(11f);
         l.setXEntrySpace(4f);
+        // l.setExtra(ColorTemplate.VORDIPLOM_COLORS, new String[] { "abc",
+        // "def", "ghj", "ikl", "mno" });
+        // l.setCustom(ColorTemplate.VORDIPLOM_COLORS, new String[] { "abc",
+        // "def", "ghj", "ikl", "mno" });
 
         setData(12, 50);
 
@@ -138,18 +140,17 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
 
         switch (item.getItemId()) {
             case R.id.actionToggleValues: {
-                for (DataSet<?> set : mChart.getData().getDataSets())
+                for (IDataSet set : mChart.getData().getDataSets())
                     set.setDrawValues(!set.isDrawValuesEnabled());
 
                 mChart.invalidate();
                 break;
             }
             case R.id.actionToggleHighlight: {
-                if (mChart.isHighlightEnabled())
-                    mChart.setHighlightEnabled(false);
-                else
-                    mChart.setHighlightEnabled(true);
-                mChart.invalidate();
+                if(mChart.getData() != null) {
+                    mChart.getData().setHighlightEnabled(!mChart.getData().isHighlightEnabled());
+                    mChart.invalidate();
+                }
                 break;
             }
             case R.id.actionTogglePinch: {
@@ -161,18 +162,16 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
                 mChart.invalidate();
                 break;
             }
+            case R.id.actionToggleAutoScaleMinMax: {
+                mChart.setAutoScaleMinMaxEnabled(!mChart.isAutoScaleMinMaxEnabled());
+                mChart.notifyDataSetChanged();
+                break;
+            }
             case R.id.actionToggleHighlightArrow: {
                 if (mChart.isDrawHighlightArrowEnabled())
                     mChart.setDrawHighlightArrow(false);
                 else
                     mChart.setDrawHighlightArrow(true);
-                mChart.invalidate();
-                break;
-            }
-            case R.id.actionToggleStartzero: {
-                mChart.getAxisLeft().setStartAtZero(!mChart.getAxisLeft().isStartAtZeroEnabled());
-                mChart.getAxisRight().setStartAtZero(!mChart.getAxisRight().isStartAtZeroEnabled());
-                mChart.notifyDataSetChanged();
                 mChart.invalidate();
                 break;
             }
@@ -187,29 +186,6 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
             case R.id.animateXY: {
 
                 mChart.animateXY(3000, 3000);
-                break;
-            }
-            case R.id.actionToggleAdjustXLegend: {
-                XAxis xLabels = mChart.getXAxis();
-
-                if (xLabels.isAdjustXLabelsEnabled())
-                    xLabels.setAdjustXLabels(false);
-                else
-                    xLabels.setAdjustXLabels(true);
-
-                mChart.invalidate();
-                break;
-            }
-            case R.id.actionToggleFilter: {
-
-                Approximator a = new Approximator(ApproximatorType.DOUGLAS_PEUCKER, 25);
-
-                if (!mChart.isFilteringEnabled()) {
-                    mChart.enableFiltering(a);
-                } else {
-                    mChart.disableFiltering();
-                }
-                mChart.invalidate();
                 break;
             }
             case R.id.actionSave: {
@@ -265,11 +241,10 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
         set1.setBarSpacePercent(35f);
 
-        ArrayList<BarDataSet> dataSets = new ArrayList<BarDataSet>();
+        ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSets.add(set1);
 
         BarData data = new BarData(xVals, dataSets);
-//        data.setValueFormatter(new MyValueFormatter());
         data.setValueTextSize(10f);
         data.setValueTypeface(mTf);
 
@@ -288,6 +263,10 @@ public class BarChartActivity extends DemoBase implements OnSeekBarChangeListene
 
         Log.i("bounds", bounds.toString());
         Log.i("position", position.toString());
+
+        Log.i("x-index",
+                "low: " + mChart.getLowestVisibleXIndex() + ", high: "
+                        + mChart.getHighestVisibleXIndex());
     }
 
     public void onNothingSelected() {

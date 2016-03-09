@@ -1,4 +1,3 @@
-
 package com.github.mikephil.charting.data;
 
 /**
@@ -8,137 +7,189 @@ package com.github.mikephil.charting.data;
  */
 public class BarEntry extends Entry {
 
-    /** the values the stacked barchart holds */
-    private float[] mVals;
+	/** the values the stacked barchart holds */
+	private float[] mVals;
 
-    /**
-     * Constructor for stacked bar entries.
-     * 
-     * @param vals - the stack values
-     * @param xIndex
-     */
-    public BarEntry(float[] vals, int xIndex) {
-        super(calcSum(vals), xIndex);
+	/** the sum of all negative values this entry (if stacked) contains */
+	private float mNegativeSum;
 
-        this.mVals = vals;
-    }
+	/** the sum of all positive values this entry (if stacked) contains */
+	private float mPositiveSum;
 
-    /**
-     * Constructor for normal bars (not stacked).
-     * 
-     * @param val
-     * @param xIndex
-     */
-    public BarEntry(float val, int xIndex) {
-        super(val, xIndex);
-    }
+	/**
+	 * Constructor for stacked bar entries.
+	 * 
+	 * @param vals
+	 *            - the stack values, use at lest 2
+	 * @param xIndex
+	 */
+	public BarEntry(float[] vals, int xIndex) {
+		super(calcSum(vals), xIndex);
 
-    /**
-     * Constructor for stacked bar entries.
-     * 
-     * @param vals - the stack values
-     * @param xIndex
-     * @param label Additional description label.
-     */
-    public BarEntry(float[] vals, int xIndex, String label) {
-        super(calcSum(vals), xIndex, label);
+		this.mVals = vals;
+		calcPosNegSum();
+	}
 
-        this.mVals = vals;
-    }
+	/**
+	 * Constructor for normal bars (not stacked).
+	 * 
+	 * @param val
+	 * @param xIndex
+	 */
+	public BarEntry(float val, int xIndex) {
+		super(val, xIndex);
+	}
 
-    /**
-     * Constructor for normal bars (not stacked).
-     * 
-     * @param val
-     * @param xIndex
-     * @param data Spot for additional data this Entry represents.
-     */
-    public BarEntry(float val, int xIndex, Object data) {
-        super(val, xIndex, data);
-    }
+	/**
+	 * Constructor for stacked bar entries.
+	 * 
+	 * @param vals
+	 *            - the stack values, use at least 2
+	 * @param xIndex
+	 * @param label
+	 *            Additional description label.
+	 */
+	public BarEntry(float[] vals, int xIndex, String label) {
+		super(calcSum(vals), xIndex, label);
 
-    /**
-     * Returns an exact copy of the BarEntry.
-     */
-    public BarEntry copy() {
+		this.mVals = vals;
+		calcPosNegSum();
+	}
 
-        BarEntry copied = new BarEntry(getVal(), getXIndex(), getData());
-        copied.mVals = mVals;
-        return copied;
-    }
+	/**
+	 * Constructor for normal bars (not stacked).
+	 * 
+	 * @param val
+	 * @param xIndex
+	 * @param data
+	 *            Spot for additional data this Entry represents.
+	 */
+	public BarEntry(float val, int xIndex, Object data) {
+		super(val, xIndex, data);
+	}
 
-    /**
-     * Returns the stacked values this BarEntry represents, or null, if only a
-     * single value is represented (then, use getVal()).
-     * 
-     * @return
-     */
-    public float[] getVals() {
-        return mVals;
-    }
+	/**
+	 * Returns an exact copy of the BarEntry.
+	 */
+	public BarEntry copy() {
 
-    /**
-     * Set the array of values this BarEntry should represent.
-     * 
-     * @param vals
-     */
-    public void setVals(float[] vals) {
-        mVals = vals;
-    }
+		BarEntry copied = new BarEntry(getVal(), getXIndex(), getData());
+		copied.setVals(mVals);
+		return copied;
+	}
 
-    /**
-     * Returns the closest value inside the values array (for stacked barchart)
-     * to the value given as a parameter. The closest value must be higher
-     * (above) the provided value.
-     * 
-     * @param val
-     * @return
-     */
-    public int getClosestIndexAbove(float val) {
+	/**
+	 * Returns the stacked values this BarEntry represents, or null, if only a single value is represented (then, use
+	 * getVal()).
+	 * 
+	 * @return
+	 */
+	public float[] getVals() {
+		return mVals;
+	}
 
-        if (mVals == null)
-            return 0;
-        
-        int index = mVals.length - 1;
-        float remainder = 0f;
+	/**
+	 * Set the array of values this BarEntry should represent.
+	 * 
+	 * @param vals
+	 */
+	public void setVals(float[] vals) {
+		setVal(calcSum(vals));
+		mVals = vals;
+		calcPosNegSum();
+	}
 
-        while(index > 0 && val > mVals[index] + remainder) {
-            remainder += mVals[index];
-            index--;
-        }
-        
-        return index;
-    }
-    
-    public float getBelowSum(int stackIndex) {
-        
-        if (mVals == null)
-            return 0;
-        
-        float remainder = 0f;
-        int index = mVals.length - 1;
-        
-        while(index > stackIndex && index >= 0) {
-            remainder += mVals[index];
-            index--;
-        }
-        
-        return remainder;
-    }
+	/**
+	 * Returns the value of this BarEntry. If the entry is stacked, it returns the positive sum of all values.
+	 * 
+	 * @return
+	 */
+	@Override
+	public float getVal() {
+		return super.getVal();
+	}
 
-    /**
-     * Calculates the sum across all values.
-     * 
-     * @param vals
-     * @return
-     */
-    private static float calcSum(float[] vals) {
+	/**
+	 * Returns true if this BarEntry is stacked (has a values array), false if not.
+	 * 
+	 * @return
+	 */
+	public boolean isStacked() {
+		return mVals != null;
+	}
 
-        float sum = 0f;
+	public float getBelowSum(int stackIndex) {
 
-        for (float f : vals)
-            sum += f;
+		if (mVals == null)
+			return 0;
 
-        return sum;
-    }
+		float remainder = 0f;
+		int index = mVals.length - 1;
+
+		while (index > stackIndex && index >= 0) {
+			remainder += mVals[index];
+			index--;
+		}
+
+		return remainder;
+	}
+
+	/**
+	 * Reuturns the sum of all positive values this entry (if stacked) contains.
+	 * 
+	 * @return
+	 */
+	public float getPositiveSum() {
+		return mPositiveSum;
+	}
+
+	/**
+	 * Returns the sum of all negative values this entry (if stacked) contains. (this is a positive number)
+	 * 
+	 * @return
+	 */
+	public float getNegativeSum() {
+		return mNegativeSum;
+	}
+
+	private void calcPosNegSum() {
+
+		if (mVals == null) {
+			mNegativeSum = 0;
+			mPositiveSum = 0;
+			return;
+		}
+
+		float sumNeg = 0f;
+		float sumPos = 0f;
+
+		for (float f : mVals) {
+			if (f <= 0f)
+				sumNeg += Math.abs(f);
+			else
+				sumPos += f;
+		}
+
+		mNegativeSum = sumNeg;
+		mPositiveSum = sumPos;
+	}
+
+	/**
+	 * Calculates the sum across all values of the given stack.
+	 *
+	 * @param vals
+	 * @return
+	 */
+	private static float calcSum(float[] vals) {
+
+		if (vals == null)
+			return 0f;
+
+		float sum = 0f;
+
+		for (float f : vals)
+			sum += f;
+
+		return sum;
+	}
 }

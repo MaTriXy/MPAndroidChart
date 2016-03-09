@@ -5,45 +5,37 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
-import com.github.mikephil.charting.buffer.CandleBodyBuffer;
-import com.github.mikephil.charting.buffer.CandleShadowBuffer;
 import com.github.mikephil.charting.data.CandleData;
-import com.github.mikephil.charting.data.CandleDataSet;
 import com.github.mikephil.charting.data.CandleEntry;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.interfaces.CandleDataProvider;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.dataprovider.CandleDataProvider;
+import com.github.mikephil.charting.interfaces.datasets.ICandleDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.Highlight;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.util.List;
 
-public class CandleStickChartRenderer extends DataRenderer {
+public class CandleStickChartRenderer extends LineScatterCandleRadarRenderer {
 
     protected CandleDataProvider mChart;
 
-    private CandleShadowBuffer[] mShadowBuffers;
-    private CandleBodyBuffer[] mBodyBuffers;
+    private float[] mShadowBuffers = new float[8];
+    private float[] mBodyBuffers = new float[4];
+    private float[] mRangeBuffers = new float[4];
+    private float[] mOpenBuffers = new float[4];
+    private float[] mCloseBuffers = new float[4];
 
     public CandleStickChartRenderer(CandleDataProvider chart, ChartAnimator animator,
-            ViewPortHandler viewPortHandler) {
+                                    ViewPortHandler viewPortHandler) {
         super(animator, viewPortHandler);
         mChart = chart;
     }
 
     @Override
     public void initBuffers() {
-        CandleData candleData = mChart.getCandleData();
-        mShadowBuffers = new CandleShadowBuffer[candleData.getDataSetCount()];
-        mBodyBuffers = new CandleBodyBuffer[candleData.getDataSetCount()];
 
-        for (int i = 0; i < mShadowBuffers.length; i++) {
-            CandleDataSet set = candleData.getDataSetByIndex(i);
-            mShadowBuffers[i] = new CandleShadowBuffer(set.getValueCount() * 4);
-            mBodyBuffers[i] = new CandleBodyBuffer(set.getValueCount() * 4);
-        }
     }
 
     @Override
@@ -51,145 +43,216 @@ public class CandleStickChartRenderer extends DataRenderer {
 
         CandleData candleData = mChart.getCandleData();
 
-        for (CandleDataSet set : candleData.getDataSets()) {
+        for (ICandleDataSet set : candleData.getDataSets()) {
 
-            if (set.isVisible())
+            if (set.isVisible() && set.getEntryCount() > 0)
                 drawDataSet(c, set);
         }
     }
 
-    protected void drawDataSet(Canvas c, CandleDataSet dataSet) {
+    protected void drawDataSet(Canvas c, ICandleDataSet dataSet) {
 
         Transformer trans = mChart.getTransformer(dataSet.getAxisDependency());
-        calcXBounds(trans);
 
         float phaseX = mAnimator.getPhaseX();
         float phaseY = mAnimator.getPhaseY();
+        float barSpace = dataSet.getBarSpace();
+        boolean showCandleBar = dataSet.getShowCandleBar();
 
-        int dataSetIndex = mChart.getCandleData().getIndexOfDataSet(dataSet);
-
-        List<CandleEntry> entries = dataSet.getYVals();
-
-        Entry entryFrom = dataSet.getEntryForXIndex(mMinX);
-        Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
-
-        int minx = dataSet.getEntryPosition(entryFrom);
-        int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
-
-        int range = (maxx - minx) * 4;
-        int to = (int)Math.ceil((maxx - minx) * phaseX + minx);
-
-        CandleShadowBuffer shadowBuffer = mShadowBuffers[dataSetIndex];
-        shadowBuffer.setPhases(phaseX, phaseY);
-        shadowBuffer.limitFrom(minx);
-        shadowBuffer.limitTo(maxx);
-        shadowBuffer.feed(entries);
-
-        trans.pointValuesToPixel(shadowBuffer.buffer);
-
-        mRenderPaint.setStyle(Paint.Style.STROKE);
-
-        // If not set, use default functionality for backward compatibility
-        if (dataSet.getShadowColor() == ColorTemplate.COLOR_NONE) {
-            mRenderPaint.setColor(dataSet.getColor());
-        } else {
-            mRenderPaint.setColor(dataSet.getShadowColor());
-        }
+        int minx = Math.max(mMinX, 0);
+        int maxx = Math.min(mMaxX + 1, dataSet.getEntryCount());
 
         mRenderPaint.setStrokeWidth(dataSet.getShadowWidth());
 
-        // draw the shadow
-        c.drawLines(shadowBuffer.buffer, 0, range, mRenderPaint);
-
-        CandleBodyBuffer bodyBuffer = mBodyBuffers[dataSetIndex];
-        bodyBuffer.setBodySpace(dataSet.getBodySpace());
-        bodyBuffer.setPhases(phaseX, phaseY);
-        bodyBuffer.limitFrom(minx);
-        bodyBuffer.limitTo(maxx);
-        bodyBuffer.feed(entries);
-
-        trans.pointValuesToPixel(bodyBuffer.buffer);
-
         // draw the body
-        for (int j = 0; j < range; j += 4) {
+        for (int j = minx,
+             count = (int) Math.ceil((maxx - minx) * phaseX + (float)minx);
+             j < count;
+             j++) {
 
             // get the entry
-            CandleEntry e = entries.get(j / 4 + minx);
+            CandleEntry e = dataSet.getEntryForIndex(j);
 
-            if (!fitsBounds(e.getXIndex(), mMinX, to))
+            final int xIndex = e.getXIndex();
+
+            if (xIndex < minx || xIndex >= maxx)
                 continue;
 
-            float leftBody = bodyBuffer.buffer[j];
-            float open = bodyBuffer.buffer[j + 1];
-            float rightBody = bodyBuffer.buffer[j + 2];
-            float close = bodyBuffer.buffer[j + 3];
+            final float open = e.getOpen();
+            final float close = e.getClose();
+            final float high = e.getHigh();
+            final float low = e.getLow();
 
-            // draw body differently for increasing and decreasing entry
-            if (open > close) { // decreasing
+            if (showCandleBar) {
+                // calculate the shadow
 
-                if (dataSet.getDecreasingColor() == ColorTemplate.COLOR_NONE) {
-                    mRenderPaint.setColor(dataSet.getColor(j / 4 + minx));
+                mShadowBuffers[0] = xIndex;
+                mShadowBuffers[2] = xIndex;
+                mShadowBuffers[4] = xIndex;
+                mShadowBuffers[6] = xIndex;
+
+                if (open > close) {
+                    mShadowBuffers[1] = high * phaseY;
+                    mShadowBuffers[3] = open * phaseY;
+                    mShadowBuffers[5] = low * phaseY;
+                    mShadowBuffers[7] = close * phaseY;
+                } else if (open < close) {
+                    mShadowBuffers[1] = high * phaseY;
+                    mShadowBuffers[3] = close * phaseY;
+                    mShadowBuffers[5] = low * phaseY;
+                    mShadowBuffers[7] = open * phaseY;
                 } else {
-                    mRenderPaint.setColor(dataSet.getDecreasingColor());
+                    mShadowBuffers[1] = high * phaseY;
+                    mShadowBuffers[3] = open * phaseY;
+                    mShadowBuffers[5] = low * phaseY;
+                    mShadowBuffers[7] = mShadowBuffers[3];
                 }
 
-                mRenderPaint.setStyle(dataSet.getDecreasingPaintStyle());
-                // draw the body
-                c.drawRect(leftBody, close, rightBody, open, mRenderPaint);
+                trans.pointValuesToPixel(mShadowBuffers);
 
+                // draw the shadows
+
+                if (dataSet.getShadowColorSameAsCandle()) {
+
+                    if (open > close)
+                        mRenderPaint.setColor(
+                                dataSet.getDecreasingColor() == ColorTemplate.COLOR_NONE ?
+                                        dataSet.getColor(j) :
+                                        dataSet.getDecreasingColor()
+                        );
+
+                    else if (open < close)
+                        mRenderPaint.setColor(
+                                dataSet.getIncreasingColor() == ColorTemplate.COLOR_NONE ?
+                                        dataSet.getColor(j) :
+                                        dataSet.getIncreasingColor()
+                        );
+
+                    else
+                        mRenderPaint.setColor(
+                                dataSet.getNeutralColor() == ColorTemplate.COLOR_NONE ?
+                                        dataSet.getColor(j) :
+                                        dataSet.getNeutralColor()
+                        );
+
+                } else {
+                    mRenderPaint.setColor(
+                            dataSet.getShadowColor() == ColorTemplate.COLOR_NONE ?
+                                    dataSet.getColor(j) :
+                                    dataSet.getShadowColor()
+                    );
+                }
+
+                mRenderPaint.setStyle(Paint.Style.STROKE);
+
+                c.drawLines(mShadowBuffers, mRenderPaint);
+
+                // calculate the body
+
+                mBodyBuffers[0] = xIndex - 0.5f + barSpace;
+                mBodyBuffers[1] = close * phaseY;
+                mBodyBuffers[2] = (xIndex + 0.5f - barSpace);
+                mBodyBuffers[3] = open * phaseY;
+
+                trans.pointValuesToPixel(mBodyBuffers);
+
+                // draw body differently for increasing and decreasing entry
+                if (open > close) { // decreasing
+
+                    if (dataSet.getDecreasingColor() == ColorTemplate.COLOR_NONE) {
+                        mRenderPaint.setColor(dataSet.getColor(j));
+                    } else {
+                        mRenderPaint.setColor(dataSet.getDecreasingColor());
+                    }
+
+                    mRenderPaint.setStyle(dataSet.getDecreasingPaintStyle());
+
+                    c.drawRect(
+                            mBodyBuffers[0], mBodyBuffers[3],
+                            mBodyBuffers[2], mBodyBuffers[1],
+                            mRenderPaint);
+
+                } else if (open < close) {
+
+                    if (dataSet.getIncreasingColor() == ColorTemplate.COLOR_NONE) {
+                        mRenderPaint.setColor(dataSet.getColor(j));
+                    } else {
+                        mRenderPaint.setColor(dataSet.getIncreasingColor());
+                    }
+
+                    mRenderPaint.setStyle(dataSet.getIncreasingPaintStyle());
+
+                    c.drawRect(
+                            mBodyBuffers[0], mBodyBuffers[1],
+                            mBodyBuffers[2], mBodyBuffers[3],
+                            mRenderPaint);
+                } else { // equal values
+
+                    if (dataSet.getNeutralColor() == ColorTemplate.COLOR_NONE) {
+                        mRenderPaint.setColor(dataSet.getColor(j));
+                    } else {
+                        mRenderPaint.setColor(dataSet.getNeutralColor());
+                    }
+
+                    c.drawLine(
+                            mBodyBuffers[0], mBodyBuffers[1],
+                            mBodyBuffers[2], mBodyBuffers[3],
+                            mRenderPaint);
+                }
             } else {
 
-                if (dataSet.getIncreasingColor() == ColorTemplate.COLOR_NONE) {
-                    mRenderPaint.setColor(dataSet.getColor(j / 4 + minx));
-                } else {
-                    mRenderPaint.setColor(dataSet.getIncreasingColor());
-                }
+                mRangeBuffers[0] = xIndex;
+                mRangeBuffers[1] = high * phaseY;
+                mRangeBuffers[2] = xIndex;
+                mRangeBuffers[3] = low * phaseY;
 
-                mRenderPaint.setStyle(dataSet.getIncreasingPaintStyle());
-                // draw the body
-                c.drawRect(leftBody, open, rightBody, close, mRenderPaint);
+                mOpenBuffers[0] = xIndex - 0.5f + barSpace;
+                mOpenBuffers[1] = open * phaseY;
+                mOpenBuffers[2] = xIndex;
+                mOpenBuffers[3] = open * phaseY;
+
+                mCloseBuffers[0] = xIndex + 0.5f - barSpace;
+                mCloseBuffers[1] = close * phaseY;
+                mCloseBuffers[2] = xIndex;
+                mCloseBuffers[3] = close * phaseY;
+
+                trans.pointValuesToPixel(mRangeBuffers);
+                trans.pointValuesToPixel(mOpenBuffers);
+                trans.pointValuesToPixel(mCloseBuffers);
+
+                // draw the ranges
+                int barColor;
+
+                if (open > close)
+                    barColor = dataSet.getDecreasingColor() == ColorTemplate.COLOR_NONE
+                            ? dataSet.getColor(j)
+                            : dataSet.getDecreasingColor();
+                else if (open < close)
+                    barColor = dataSet.getIncreasingColor() == ColorTemplate.COLOR_NONE
+                            ? dataSet.getColor(j)
+                            : dataSet.getIncreasingColor();
+                else
+                    barColor = dataSet.getNeutralColor() == ColorTemplate.COLOR_NONE
+                            ? dataSet.getColor(j)
+                            : dataSet.getNeutralColor();
+
+                mRenderPaint.setColor(barColor);
+                c.drawLine(
+                        mRangeBuffers[0], mRangeBuffers[1],
+                        mRangeBuffers[2], mRangeBuffers[3],
+                        mRenderPaint);
+                c.drawLine(
+                        mOpenBuffers[0], mOpenBuffers[1],
+                        mOpenBuffers[2], mOpenBuffers[3],
+                        mRenderPaint);
+                c.drawLine(
+                        mCloseBuffers[0], mCloseBuffers[1],
+                        mCloseBuffers[2], mCloseBuffers[3],
+                        mRenderPaint);
+
             }
         }
     }
-
-    // /**
-    // * Transforms the values of an entry in order to draw the candle-body.
-    // *
-    // * @param bodyPoints
-    // * @param e
-    // * @param bodySpace
-    // */
-    // private void transformBody(float[] bodyPoints, CandleEntry e, float
-    // bodySpace, Transformer trans) {
-    //
-    // float phase = mAnimator.getPhaseY();
-    //
-    // bodyPoints[0] = e.getXIndex() - 0.5f + bodySpace;
-    // bodyPoints[1] = e.getClose() * phase;
-    // bodyPoints[2] = e.getXIndex() + 0.5f - bodySpace;
-    // bodyPoints[3] = e.getOpen() * phase;
-    //
-    // trans.pointValuesToPixel(bodyPoints);
-    // }
-    //
-    // /**
-    // * Transforms the values of an entry in order to draw the candle-shadow.
-    // *
-    // * @param shadowPoints
-    // * @param e
-    // */
-    // private void transformShadow(float[] shadowPoints, CandleEntry e,
-    // Transformer trans) {
-    //
-    // float phase = mAnimator.getPhaseY();
-    //
-    // shadowPoints[0] = e.getXIndex();
-    // shadowPoints[1] = e.getHigh() * phase;
-    // shadowPoints[2] = e.getXIndex();
-    // shadowPoints[3] = e.getLow() * phase;
-    //
-    // trans.pointValuesToPixel(shadowPoints);
-    // }
 
     @Override
     public void drawValues(Canvas c) {
@@ -198,13 +261,13 @@ public class CandleStickChartRenderer extends DataRenderer {
         if (mChart.getCandleData().getYValCount() < mChart.getMaxVisibleCount()
                 * mViewPortHandler.getScaleX()) {
 
-            List<CandleDataSet> dataSets = mChart.getCandleData().getDataSets();
+            List<ICandleDataSet> dataSets = mChart.getCandleData().getDataSets();
 
             for (int i = 0; i < dataSets.size(); i++) {
 
-                CandleDataSet dataSet = dataSets.get(i);
+                ICandleDataSet dataSet = dataSets.get(i);
 
-                if (!dataSet.isDrawValuesEnabled())
+                if (!dataSet.isDrawValuesEnabled() || dataSet.getEntryCount() == 0)
                     continue;
 
                 // apply the text-styling defined by the DataSet
@@ -212,16 +275,11 @@ public class CandleStickChartRenderer extends DataRenderer {
 
                 Transformer trans = mChart.getTransformer(dataSet.getAxisDependency());
 
-                List<CandleEntry> entries = dataSet.getYVals();
-
-                Entry entryFrom = dataSet.getEntryForXIndex(mMinX);
-                Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
-
-                int minx = dataSet.getEntryPosition(entryFrom);
-                int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
+                int minx = Math.max(mMinX, 0);
+                int maxx = Math.min(mMaxX + 1, dataSet.getEntryCount());
 
                 float[] positions = trans.generateTransformedValuesCandle(
-                        entries, mAnimator.getPhaseX(), mAnimator.getPhaseY(), minx, maxx);
+                        dataSet, mAnimator.getPhaseX(), mAnimator.getPhaseY(), minx, maxx);
 
                 float yOffset = Utils.convertDpToPixel(5f);
 
@@ -236,10 +294,9 @@ public class CandleStickChartRenderer extends DataRenderer {
                     if (!mViewPortHandler.isInBoundsLeft(x) || !mViewPortHandler.isInBoundsY(y))
                         continue;
 
-                    float val = entries.get(j / 2 + minx).getHigh();
+                    CandleEntry entry = dataSet.getEntryForIndex(j / 2 + minx);
 
-                    c.drawText(dataSet.getValueFormatter().getFormattedValue(val), x, y - yOffset,
-                            mValuePaint);
+                    drawValue(c, dataSet.getValueFormatter(), entry.getHigh(), entry, i, x, y - yOffset, dataSet.getValueTextColor(j / 2));
                 }
             }
         }
@@ -255,44 +312,35 @@ public class CandleStickChartRenderer extends DataRenderer {
         for (int i = 0; i < indices.length; i++) {
 
             int xIndex = indices[i].getXIndex(); // get the
-                                                 // x-position
+            // x-position
 
-            CandleDataSet set = mChart.getCandleData().getDataSetByIndex(
+            ICandleDataSet set = mChart.getCandleData().getDataSetByIndex(
                     indices[i].getDataSetIndex());
 
-            if (set == null)
+            if (set == null || !set.isHighlightEnabled())
                 continue;
-
-            mHighlightPaint.setColor(set.getHighLightColor());
 
             CandleEntry e = set.getEntryForXIndex(xIndex);
 
-            if (e == null)
+            if (e == null || e.getXIndex() != xIndex)
                 continue;
 
             float low = e.getLow() * mAnimator.getPhaseY();
             float high = e.getHigh() * mAnimator.getPhaseY();
+            float y = (low + high) / 2f;
 
             float min = mChart.getYChartMin();
             float max = mChart.getYChartMax();
 
-            float[] vertPts = new float[] {
-                    xIndex - 0.5f, max, xIndex - 0.5f, min, xIndex + 0.5f, max, xIndex + 0.5f,
-                    min
+
+            float[] pts = new float[]{
+                    xIndex, y
             };
 
-            float[] horPts = new float[] {
-                    0, low, mChart.getXChartMax(), low, 0, high, mChart.getXChartMax(), high
-            };
+            mChart.getTransformer(set.getAxisDependency()).pointValuesToPixel(pts);
 
-            mChart.getTransformer(set.getAxisDependency()).pointValuesToPixel(vertPts);
-            mChart.getTransformer(set.getAxisDependency()).pointValuesToPixel(horPts);
-
-            // draw the vertical highlight lines
-            c.drawLines(vertPts, mHighlightPaint);
-
-            // draw the horizontal highlight lines
-            c.drawLines(horPts, mHighlightPaint);
+            // draw the lines
+            drawHighlightLines(c, pts, set);
         }
     }
 

@@ -2,6 +2,7 @@
 package com.github.mikephil.charting.renderer;
 
 import android.graphics.Canvas;
+import android.graphics.PointF;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -27,7 +28,9 @@ public class XAxisRendererBarChart extends XAxisRenderer {
      * @param pos
      */
     @Override
-    protected void drawLabels(Canvas c, float pos) {
+    protected void drawLabels(Canvas c, float pos, PointF anchor) {
+
+        final float labelRotationAngleDegrees = mXAxis.getLabelRotationAngle();
 
         // pre allocate to save performance (dont allocate in loop)
         float[] position = new float[] {
@@ -36,14 +39,8 @@ public class XAxisRendererBarChart extends XAxisRenderer {
 
         BarData bd = mChart.getData();
         int step = bd.getDataSetCount();
-        float div = (float) step + (step > 1 ? bd.getGroupSpace() : 0f);
 
-        float min = (float) mMinX
-                / div;
-        float max = (float) mMaxX
-                / div;
-
-        for (int i = (int) min; i <= max; i += mXAxis.mAxisLabelModulus) {
+        for (int i = mMinX; i <= mMaxX; i += mXAxis.mAxisLabelModulus) {
 
             position[0] = i * step + i * bd.getGroupSpace()
                     + bd.getGroupSpace() / 2f;
@@ -66,29 +63,26 @@ public class XAxisRendererBarChart extends XAxisRenderer {
                     if (i == mXAxis.getValues().size() - 1) {
                         float width = Utils.calcTextWidth(mAxisLabelPaint, label);
 
-                        if (width > mViewPortHandler.offsetRight() * 2
-                                && position[0] + width > mViewPortHandler.getChartWidth())
-                            position[0] -= width / 2;
+                        if (position[0] + width / 2.f > mViewPortHandler.contentRight())
+                            position[0] = mViewPortHandler.contentRight() - (width / 2.f);
 
                         // avoid clipping of the first
                     } else if (i == 0) {
 
                         float width = Utils.calcTextWidth(mAxisLabelPaint, label);
-                        position[0] += width / 2;
+
+                        if (position[0] - width / 2.f < mViewPortHandler.contentLeft())
+                            position[0] = mViewPortHandler.contentLeft() + (width / 2.f);
                     }
                 }
 
-                c.drawText(label, position[0],
-                        pos,
-                        mAxisLabelPaint);
+                drawLabel(c, label, i, position[0], pos, anchor, labelRotationAngleDegrees);
             }
         }
     }
 
     @Override
     public void renderGridLines(Canvas c) {
-
-        calcXBounds(mTrans);
 
         if (!mXAxis.isDrawGridLinesEnabled() || !mXAxis.isEnabled())
             return;
@@ -102,14 +96,8 @@ public class XAxisRendererBarChart extends XAxisRenderer {
 
         BarData bd = mChart.getData();
         int step = bd.getDataSetCount();
-        float div = (float) step + (step > 1 ? bd.getGroupSpace() : 0f);
 
-        float min = (float) mMinX
-                / div;
-        float max = (float) mMaxX
-                / div;
-
-        for (int i = (int) min; i <= max; i += mXAxis.mAxisLabelModulus) {
+        for (int i = mMinX; i < mMaxX; i += mXAxis.mAxisLabelModulus) {
 
             position[0] = i * step + i * bd.getGroupSpace() - 0.5f;
 

@@ -1,4 +1,3 @@
-
 package com.github.mikephil.charting.renderer;
 
 import android.graphics.Canvas;
@@ -37,7 +36,7 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
         double range = Math.abs(yMax - yMin);
 
         if (labelCount == 0 || range <= 0) {
-            mYAxis.mEntries = new float[] {};
+            mYAxis.mEntries = new float[]{};
             mYAxis.mEntryCount = 0;
             return;
         }
@@ -52,38 +51,65 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
             interval = Math.floor(10 * intervalMagnitude);
         }
 
-        // if the labels should only show min and max
-        if (mYAxis.isShowOnlyMinMaxEnabled()) {
+        // force label count
+        if (mYAxis.isForceLabelsEnabled()) {
 
-            mYAxis.mEntryCount = 2;
-            mYAxis.mEntries = new float[2];
-            mYAxis.mEntries[0] = yMin;
-            mYAxis.mEntries[1] = yMax;
+            float step = (float) range / (float) (labelCount - 1);
+            mYAxis.mEntryCount = labelCount;
 
+            if (mYAxis.mEntries.length < labelCount) {
+                // Ensure stops contains at least numStops elements.
+                mYAxis.mEntries = new float[labelCount];
+            }
+
+            float v = min;
+
+            for (int i = 0; i < labelCount; i++) {
+                mYAxis.mEntries[i] = v;
+                v += step;
+            }
+
+            // no forced count
         } else {
 
-            double first = Math.ceil(yMin / interval) * interval;
-            double last = Utils.nextUp(Math.floor(yMax / interval) * interval);
+            // if the labels should only show min and max
+            if (mYAxis.isShowOnlyMinMaxEnabled()) {
 
-            double f;
-            int i;
-            int n = 0;
-            for (f = first; f <= last; f += interval) {
-                ++n;
-            }
+                mYAxis.mEntryCount = 2;
+                mYAxis.mEntries = new float[2];
+                mYAxis.mEntries[0] = yMin;
+                mYAxis.mEntries[1] = yMax;
 
-            if (Float.isNaN(mYAxis.getAxisMaxValue()))
-                n += 1;
-            
-            mYAxis.mEntryCount = n;
+            } else {
 
-            if (mYAxis.mEntries.length < n) {
-                // Ensure stops contains at least numStops elements.
-                mYAxis.mEntries = new float[n];
-            }
+                final double rawCount = yMin / interval;
+                double first = rawCount < 0.0 ? Math.floor(rawCount) * interval : Math.ceil(rawCount) * interval;
 
-            for (f = first, i = 0; i < n; f += interval, ++i) {
-                mYAxis.mEntries[i] = (float) f;
+                if (first == 0.0) // Fix for IEEE negative zero case (Where value == -0.0, and 0.0 == -0.0)
+                    first = 0.0;
+
+                double last = Utils.nextUp(Math.floor(yMax / interval) * interval);
+
+                double f;
+                int i;
+                int n = 0;
+                for (f = first; f <= last; f += interval) {
+                    ++n;
+                }
+
+                if (Float.isNaN(mYAxis.getAxisMaxValue()))
+                    n += 1;
+
+                mYAxis.mEntryCount = n;
+
+                if (mYAxis.mEntries.length < n) {
+                    // Ensure stops contains at least numStops elements.
+                    mYAxis.mEntries = new float[n];
+                }
+
+                for (f = first, i = 0; i < n; f += interval, ++i) {
+                    mYAxis.mEntries[i] = (float) f;
+                }
             }
         }
 
@@ -91,6 +117,12 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
             mYAxis.mDecimals = (int) Math.ceil(-Math.log10(interval));
         } else {
             mYAxis.mDecimals = 0;
+        }
+
+        if (mYAxis.mEntries[0] < yMin) {
+            // If startAtZero is disabled, and the first label is lower that the axis minimum,
+            // Then adjust the axis minimum
+            mYAxis.mAxisMinimum = mYAxis.mEntries[0];
         }
 
         mYAxis.mAxisMaximum = mYAxis.mEntries[mYAxis.mEntryCount - 1];
@@ -146,6 +178,9 @@ public class YAxisRendererRadarChart extends YAxisRenderer {
         for (int i = 0; i < limitLines.size(); i++) {
 
             LimitLine l = limitLines.get(i);
+
+            if (!l.isEnabled())
+                continue;
 
             mLimitLinePaint.setColor(l.getLineColor());
             mLimitLinePaint.setPathEffect(l.getDashPathEffect());

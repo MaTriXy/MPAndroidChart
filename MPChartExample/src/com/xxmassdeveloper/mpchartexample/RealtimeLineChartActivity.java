@@ -19,9 +19,10 @@ import com.github.mikephil.charting.components.YAxis.AxisDependency;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
-import com.github.mikephil.charting.utils.Highlight;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 public class RealtimeLineChartActivity extends DemoBase implements
@@ -42,9 +43,6 @@ public class RealtimeLineChartActivity extends DemoBase implements
         // no description text
         mChart.setDescription("");
         mChart.setNoDataTextDescription("You need to provide data for the chart.");
-
-        // enable value highlighting
-        mChart.setHighlightEnabled(true);
 
         // enable touch gestures
         mChart.setTouchEnabled(true);
@@ -82,15 +80,19 @@ public class RealtimeLineChartActivity extends DemoBase implements
         xl.setTextColor(Color.WHITE);
         xl.setDrawGridLines(false);
         xl.setAvoidFirstLastClipping(true);
+        xl.setSpaceBetweenLabels(5);
+        xl.setEnabled(true);
 
         YAxis leftAxis = mChart.getAxisLeft();
         leftAxis.setTypeface(tf);
         leftAxis.setTextColor(Color.WHITE);
-        leftAxis.setAxisMaxValue(120f);
+        leftAxis.setAxisMaxValue(100f);
+        leftAxis.setAxisMinValue(0f);
         leftAxis.setDrawGridLines(true);
 
         YAxis rightAxis = mChart.getAxisRight();
         rightAxis.setEnabled(false);
+
     }
 
     @Override
@@ -112,11 +114,15 @@ public class RealtimeLineChartActivity extends DemoBase implements
                 Toast.makeText(this, "Chart cleared!", Toast.LENGTH_SHORT).show();
                 break;
             }
+            case R.id.actionFeedMultiple: {
+                feedMultiple();
+                break;
+            }
         }
         return true;
     }
 
-    private int year = 15;
+    private int year = 2015;
 
     private void addEntry() {
 
@@ -124,7 +130,7 @@ public class RealtimeLineChartActivity extends DemoBase implements
 
         if (data != null) {
 
-            LineDataSet set = data.getDataSetByIndex(0);
+            ILineDataSet set = data.getDataSetByIndex(0);
             // set.addEntry(...); // can be called as well
 
             if (set == null) {
@@ -135,24 +141,22 @@ public class RealtimeLineChartActivity extends DemoBase implements
             // add a new x-value first
             data.addXValue(mMonths[data.getXValCount() % 12] + " "
                     + (year + data.getXValCount() / 12));
-            data.addEntry(new Entry((float) (Math.random() * 40) + 40f, set.getEntryCount()), 0);
+            data.addEntry(new Entry((float) (Math.random() * 40) + 30f, set.getEntryCount()), 0);
+
 
             // let the chart know it's data has changed
             mChart.notifyDataSetChanged();
 
             // limit the number of visible entries
-            mChart.setVisibleXRange(6);
+            mChart.setVisibleXRangeMaximum(120);
             // mChart.setVisibleYRange(30, AxisDependency.LEFT);
 
             // move to the latest entry
-            mChart.moveViewToX(data.getXValCount() - 7);
+            mChart.moveViewToX(data.getXValCount() - 121);
 
             // this automatically refreshes the chart (calls invalidate())
             // mChart.moveViewTo(data.getXValCount()-7, 55f,
             // AxisDependency.LEFT);
-
-            // redraw the chart
-            // mChart.invalidate();
         }
     }
 
@@ -161,15 +165,43 @@ public class RealtimeLineChartActivity extends DemoBase implements
         LineDataSet set = new LineDataSet(null, "Dynamic Data");
         set.setAxisDependency(AxisDependency.LEFT);
         set.setColor(ColorTemplate.getHoloBlue());
-        set.setCircleColor(ColorTemplate.getHoloBlue());
+        set.setCircleColor(Color.WHITE);
         set.setLineWidth(2f);
-        set.setCircleSize(4f);
+        set.setCircleRadius(4f);
         set.setFillAlpha(65);
         set.setFillColor(ColorTemplate.getHoloBlue());
         set.setHighLightColor(Color.rgb(244, 117, 117));
         set.setValueTextColor(Color.WHITE);
-        set.setValueTextSize(10f);
+        set.setValueTextSize(9f);
+        set.setDrawValues(false);
         return set;
+    }
+
+    private void feedMultiple() {
+
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                for(int i = 0; i < 500; i++) {
+
+                    runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            addEntry();
+                        }
+                    });
+
+                    try {
+                        Thread.sleep(35);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override

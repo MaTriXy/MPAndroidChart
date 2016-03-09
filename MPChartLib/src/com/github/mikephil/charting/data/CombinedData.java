@@ -1,20 +1,24 @@
 
 package com.github.mikephil.charting.data;
 
+import com.github.mikephil.charting.interfaces.datasets.IBarLineScatterCandleBubbleDataSet;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Data object that allows the combination of Line-, Bar-, Scatter- and
+ * Data object that allows the combination of Line-, Bar-, Scatter-, Bubble- and
  * CandleData. Used in the CombinedChart class.
  * 
  * @author Philipp Jahoda
  */
-public class CombinedData extends BarLineScatterCandleData<BarLineScatterCandleDataSet<?>> {
+public class CombinedData extends BarLineScatterCandleBubbleData<IBarLineScatterCandleBubbleDataSet<?>> {
 
     private LineData mLineData;
     private BarData mBarData;
     private ScatterData mScatterData;
     private CandleData mCandleData;
+    private BubbleData mBubbleData;
 
     public CombinedData() {
         super();
@@ -31,25 +35,35 @@ public class CombinedData extends BarLineScatterCandleData<BarLineScatterCandleD
     public void setData(LineData data) {
         mLineData = data;
         mDataSets.addAll(data.getDataSets());
-        init(data.getDataSets());
+        init();
     }
 
     public void setData(BarData data) {
         mBarData = data;
         mDataSets.addAll(data.getDataSets());
-        init(data.getDataSets());
+        init();
     }
 
     public void setData(ScatterData data) {
         mScatterData = data;
         mDataSets.addAll(data.getDataSets());
-        init(data.getDataSets());
+        init();
     }
 
     public void setData(CandleData data) {
         mCandleData = data;
         mDataSets.addAll(data.getDataSets());
-        init(data.getDataSets());
+        init();
+    }
+
+    public void setData(BubbleData data) {
+        mBubbleData = data;
+        mDataSets.addAll(data.getDataSets());
+        init();
+    }
+
+    public BubbleData getBubbleData() {
+        return mBubbleData;
     }
 
     public LineData getLineData() {
@@ -68,11 +82,40 @@ public class CombinedData extends BarLineScatterCandleData<BarLineScatterCandleD
         return mCandleData;
     }
 
+    /**
+     * Returns all data objects in row: line-bar-scatter-candle-bubble if not null.
+     * @return
+     */
+    public List<ChartData> getAllData() {
+
+        List<ChartData> data = new ArrayList<ChartData>();
+        if(mLineData != null)
+            data.add(mLineData);
+        if(mBarData != null)
+            data.add(mBarData);
+        if(mScatterData != null)
+            data.add(mScatterData);
+        if(mCandleData != null)
+            data.add(mCandleData);
+        if(mBubbleData != null)
+            data.add(mBubbleData);
+
+        return data;
+    }
+
     @Override
     public void notifyDataChanged() {
-        mLineData.notifyDataChanged();
-        mBarData.notifyDataChanged();
-        mCandleData.notifyDataChanged();
-        mScatterData.notifyDataChanged();
+        if (mLineData != null)
+            mLineData.notifyDataChanged();
+        if (mBarData != null)
+            mBarData.notifyDataChanged();
+        if (mCandleData != null)
+            mCandleData.notifyDataChanged();
+        if (mScatterData != null)
+            mScatterData.notifyDataChanged();
+        if (mBubbleData != null)
+            mBubbleData.notifyDataChanged();
+
+        init(); // recalculate everything
     }
 }
